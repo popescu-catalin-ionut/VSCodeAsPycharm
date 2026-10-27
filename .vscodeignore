@@ -9,3 +9,13 @@ src/**
 **/*.ts
 .env
 azure-pipelines.yml
+.tools/
+dist/**
+build.ps1
+install.ps1
+install.cmd
+CLAUDE.md
+AGENTS.md
+LOCALIZATION.md
+.github/**
+scripts/**

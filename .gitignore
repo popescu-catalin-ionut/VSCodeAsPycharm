@@ -1,7 +1,10 @@
 out
 node_modules
 .vscode-test/
-*.vsix
+/*.vsix
 package-lock.json
 .env
 l10n/bundle.l10n.json
+.tools/
+dist/*
+!dist/*.vsix

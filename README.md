@@ -1,9 +1,50 @@
-[![Build Status](https://dev.azure.com/moshfeu-vscode/CompareFoldersExtension/_apis/build/status/moshfeu.vscode-compare-folders?branchName=master)](https://dev.azure.com/moshfeu-vscode/CompareFoldersExtension/_build/latest?definitionId=1&branchName=master)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-yellow.svg?style=flat)](https://github.com/Coding-Coach/find-a-mentor/issues)
-[![The MIT License](https://flat.badgen.net/badge/license/MIT/orange)](http://opensource.org/licenses/MIT)
-[![GitHub](https://flat.badgen.net/github/release/moshfeu/vscode-compare-folders)](https://github.com/moshfeu/vscode-compare-folders/releases)
-[![Visual Studio Marketplace](https://img.shields.io/vscode-marketplace/i/moshfeu.compare-folders.svg)](https://marketplace.visualstudio.com/items?itemName=moshfeu.compare-folders)
-[![Follow me on Twitter](https://img.shields.io/twitter/follow/moshfeu.svg?style=social)](https://twitter.com/moshfeu)
+# AsPycharm
+
+One VS Code extension, our own build, from our Forgejo: `http://192.168.3.241:3000/catalinpop/AsPycharm`.
+It merges two extensions, reviewed line by line on 2026-10-27:
+
+| Part | From | What it adds |
+|---|---|---|
+| **Compare Folders** | [moshfeu/vscode-compare-folders](https://github.com/moshfeu/vscode-compare-folders) v0.30.0 (MIT), full git history kept, remote `upstream` | the Compare Folders panel: diff two folders, open file diffs, copy / take / delete files |
+| **Refresh Explorer** | [LLLLinda/vscode-extension-refresh](https://github.com/LLLLinda/vscode-extension-refresh) | "Refresh Explorer" in the Explorer's right-click menu (one menu entry in `package.json`, no code) |
+
+Our changes on top of upstream: the extension ID is `catalinpop.aspycharm` (so the Marketplace never auto-updates it
+over our build), the Refresh Explorer menu entry, and a fix: deleting a file now asks according to
+`compareFolders.warnBeforeDelete` (upstream asked according to `warnBeforeTake`).
+
+## Install on a machine (no Node needed)
+
+The built extension is committed in `dist\`. On any Windows machine with VS Code and access to Forgejo:
+
+```powershell
+git clone git@git-local:catalinpop/AsPycharm.git D:\AsPycharm   # or ssh://git@192.168.3.241:2223/catalinpop/AsPycharm.git
+D:\AsPycharm\install.cmd
+```
+
+- `install.cmd` (or `install.ps1`) uninstalls the two extensions it replaces if present
+  (`moshfeu.compare-folders`, `linda-cheung.content-menu-item-refresh`), installs `dist\aspycharm-*.vsix`, and checks
+  that VS Code lists it. Then reload the VS Code windows.
+- **Update:** `D:\AsPycharm\install.cmd -Pull` (git pull, then reinstall).
+- **No Forgejo access** (e.g. the laptop away from home): copy `dist\aspycharm-*.vsix` over and run
+  `install.ps1 -Vsix <path>`, or VS Code > Extensions > `...` > Install from VSIX.
+
+## Build after a change
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Test
+```
+
+`build.ps1` downloads a portable Node 20 into `.tools\` once (SHA-256 checked against nodejs.org; nothing installed
+system-wide), installs dependencies from `yarn.lock` with install scripts disabled, compiles, runs the tests with
+`-Test` (they run inside a test copy of VS Code, downloaded into `.vscode-test\`), and writes `dist\aspycharm-<version>.vsix`.
+Bump `version` in `package.json`, build, commit the new VSIX, push; then `install.cmd -Pull` on each machine.
+
+**Taking upstream fixes:** `git fetch upstream; git merge upstream/master`, review the diff, build with `-Test`.
+
+---
+
+# Compare Folders (upstream documentation)
+
 
 The extension allows you to compare folders, show the diffs in a list and present diff in a splitted view side by side.
 

@@ -1,11 +1,11 @@
 {
-  "name": "compare-folders",
-  "displayName": "%ext.displayName%",
-  "description": "%ext.description%",
-  "version": "0.30.0",
+  "name": "aspycharm",
+  "displayName": "AsPycharm",
+  "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu, as one extension.",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/moshfeu/vscode-compare-folders"
+    "url": "http://192.168.3.241:3000/catalinpop/AsPycharm"
   },
   "keywords": [
     "compare",
@@ -18,7 +18,7 @@
     "color": "#ffbe6c",
     "theme": "light"
   },
-  "publisher": "moshfeu",
+  "publisher": "catalinpop",
   "author": {
     "name": "Mosh Feuchtwanger",
     "email": "moshfeu.dev@gmail.com",
@@ -182,7 +182,7 @@
         },
         "compareFolders.warnBeforeDelete": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "%ext.config.warnBeforeDelete.description%",
           "scope": "resource"
         },
@@ -328,6 +328,10 @@
         {
           "command": "foldersCompare.compareSelectedFolders",
           "when": "explorerResourceIsFolder && listDoubleSelection"
+        },
+        {
+          "command": "workbench.files.action.refreshFilesExplorer",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
