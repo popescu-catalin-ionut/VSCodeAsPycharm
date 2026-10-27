@@ -70,8 +70,9 @@ export async function showErrorMessageWithMoreInfo(message: string, link: string
   }
 }
 
-export const warnBefore = async (message: string) => {
-  if (getConfiguration('warnBeforeTake')) {
+// Asks for confirmation when `setting` is on; returns whether to go ahead.
+export const warnBefore = async (message: string, setting: 'warnBeforeDelete' | 'warnBeforeTake') => {
+  if (getConfiguration(setting)) {
     const yesMessage = l10n.t('Yes, go for it');
     return yesMessage ===
       (await window.showInformationMessage(

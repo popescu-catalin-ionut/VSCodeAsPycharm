@@ -288,7 +288,7 @@ export class CompareFoldersProvider extends BaseViewProvider {
   };
 
   deleteFile = async (e: TreeItem) => {
-    const shouldDelete = await warnBefore(l10n.t('Are you sure you want to delete this file?'));
+    const shouldDelete = await warnBefore(l10n.t('Are you sure you want to delete this file?'), 'warnBeforeDelete');
 
     if (shouldDelete) {
       removeSync(e.resourceUri!.fsPath);
@@ -297,7 +297,7 @@ export class CompareFoldersProvider extends BaseViewProvider {
   };
 
   takeMyFile = async (e: TreeItem) => {
-    const shouldTake = await warnBefore(l10n.t('Are you sure you want to take my file?'));
+    const shouldTake = await warnBefore(l10n.t('Are you sure you want to take my file?'), 'warnBeforeTake');
 
     if (shouldTake) {
       const [[filePath]] = e.command!.arguments!;
@@ -306,7 +306,7 @@ export class CompareFoldersProvider extends BaseViewProvider {
   };
 
   takeComparedFile = async (e: TreeItem) => {
-    const shouldTake = await warnBefore(l10n.t('Are you sure you want to take the compared file?'));
+    const shouldTake = await warnBefore(l10n.t('Are you sure you want to take the compared file?'), 'warnBeforeTake');
 
     if (shouldTake) {
       const [[, filePath]] = e.command!.arguments!;
