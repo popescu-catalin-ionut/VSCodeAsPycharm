@@ -9,7 +9,7 @@ It merges five extensions and plugins, each reviewed line by line (the first two
 | **Compare Folders** | [moshfeu/vscode-compare-folders](https://github.com/moshfeu/vscode-compare-folders) v0.30.0 (MIT), full git history kept, remote `upstream` | the Compare Folders panel: diff two folders, open file diffs, copy / take / delete files |
 | **Refresh Explorer** | [LLLLinda/vscode-extension-refresh](https://github.com/LLLLinda/vscode-extension-refresh) | "Refresh Explorer" in the Explorer's right-click menu (one menu entry in `package.json`, no code) |
 | **PyCharm-like snippets** | [un4gt/pycharm-like-snippets](https://github.com/un4gt/pycharm-like-snippets) v0.1.0 (MIT, licence in `snippets/`), ported at commit `505c2d1` | 32 PyCharm-style Python snippets and **Alt+P** to wrap a line in `print(...)` |
-| **CharmRun** | [yingbo/charmrun](https://github.com/yingbo/charmrun) v1.6.1 (MIT, licence in `resources/charmrun/`), ported at commit `2327ba4` into `src/charmrun/` | PyCharm-style Python run configurations: a sidebar, a form editor, Run / Debug buttons, before-launch steps |
+| **PyCharm-style Run** (from CharmRun) | [yingbo/charmrun](https://github.com/yingbo/charmrun) v1.6.1 (MIT, licence in `resources/charmrun/`), ported at commit `2327ba4` into `src/charmrun/` | PyCharm-style Python run configurations: a sidebar, a form editor, Run / Debug buttons, before-launch steps |
 | **Python Doc Links** | [rufatpro/plugins `jetbrains/py-doc-links`](https://github.com/rufatpro/plugins/tree/main/jetbrains/py-doc-links) 0.2.10 (MIT, licence in `resources/pyDocLinks/`), a JetBrains plugin rewritten in TypeScript from commit `bae1de9` into `src/pyDocLinks/` | **Ctrl+Click** on `file.py` and Sphinx references (`:py:func:`, `:class:`, ...) in docstrings and comments |
 | **PyCharm-style Debug panel** | our own, in `src/debugPanel/` | PyCharm's Debug tool window: session tabs, Threads & Variables, Console, the debug toolbar |
 
@@ -51,24 +51,28 @@ the cursor was at the very end of the line, mangled lines with trailing spaces, 
 Not taken: their build setup and `package-lock.json` (which pulls from the `registry.npmmirror.com` mirror); nothing
 new is needed to build it.
 
-### CharmRun: Python run configurations
+### PyCharm-style Run: Python run configurations
 
-Open **CharmRun** in the Activity Bar (the ▶ icon), click **Add Configuration**, fill the form (script or module,
+Ported from [CharmRun](https://github.com/yingbo/charmrun) and shown as one feature, **PyCharm-style Run**. Its command IDs
+(`charmrun.*`) and `launch.json` keys (`charmrunManaged`, `charmrunId`, ...) keep the original prefix, so existing
+configurations and custom keyboard shortcuts keep working.
+
+Open **PyCharm-style Run** in the Activity Bar (the ▶ icon), click **Add Configuration**, fill the form (script or module,
 interpreter, arguments, working directory, environment variables or an `.env` file), then **Save & Close** or
 **Apply**. Pick the active configuration in the status bar and run it with the ▶ / 🐞 buttons there, the inline
-buttons in the sidebar, or the Command Palette (*CharmRun: Run Configuration*, *Debug Configuration*,
+buttons in the sidebar, or the Command Palette (*PyCharm-style Run: Run Configuration*, *Debug Configuration*,
 *Run Current Python File*, ...). Double-click a configuration to edit it.
 
 - Configurations are stored in `.vscode/launch.json` as ordinary `debugpy` entries (marked `"charmrunManaged": true`),
   so VS Code's own Run and Debug view can launch them too. Existing Python entries can be **adopted**; entries
-  CharmRun did not create or adopt are never touched. Format: [resources/charmrun/CONFIG_FORMAT.md](resources/charmrun/CONFIG_FORMAT.md).
+  PyCharm-style Run did not create or adopt are never touched. Format: [resources/charmrun/CONFIG_FORMAT.md](resources/charmrun/CONFIG_FORMAT.md).
 - **Before launch** steps run first, in order: another configuration, an external tool (a command run through the
-  shell), or a VS Code task. A failing step stops the launch. Log: *Output > CharmRun Before Launch*.
+  shell), or a VS Code task. A failing step stops the launch. Log: *Output > PyCharm-style Run: Before Launch*.
 - **Save console output to a file**, overwritten on every run.
 - Interpreter: the one selected in the Python extension, else `python.defaultInterpreterPath`, else `python3` /
   `python` on PATH; it must answer `--version` with a Python version. Needs the **Python Debugger** extension
   (`ms-python.debugpy`).
-- Failures (missing interpreter or script, non-zero exit code) are shown as notifications; log: *Output > CharmRun*.
+- Failures (missing interpreter or script, non-zero exit code) are shown as notifications; log: *Output > PyCharm-style Run*.
 
 **Right-click a Python file, as in PyCharm** (in the Explorer or in the editor):
 
@@ -78,7 +82,7 @@ buttons in the sidebar, or the Command Palette (*CharmRun: Run Configuration*, *
 | **Debug Python File (PyCharm-style)** | Debug 'main' | Ctrl+Shift+F9, ⌃⇧D |
 | **Modify Run Configuration...** | Modify Run Configuration... | |
 
-- If a CharmRun configuration already runs that file, it is used (with its interpreter, arguments, environment and
+- If a PyCharm-style Run configuration already runs that file, it is used (with its interpreter, arguments, environment and
   before-launch steps) and becomes the active one in the status bar.
 - Otherwise, like PyCharm, a temporary configuration named after the file (`main` for `main.py`) runs it, with the
   file's folder as working directory and the workspace's `.env` if there is one. It is not written to `launch.json`;
@@ -99,7 +103,7 @@ Fixed while porting, each with a test in `src/test/suite/charmrun.test.ts` that 
 - A `launch.json` with a trailing comma (which VS Code accepts) could not be read, and the next save **overwrote the
   whole file**, deleting every other launch configuration. Now trailing commas are read, and a file with a real
   syntax error is never written.
-- Every save rewrote `launch.json` and **deleted its comments**. Now only CharmRun's own entries are edited, in place.
+- Every save rewrote `launch.json` and **deleted its comments**. Now only PyCharm-style Run's own entries are edited, in place.
 - Arguments with spaces were **split on save** (`--name "John Smith"` became three arguments) just by opening the
   configuration and pressing Apply. The form now quotes them, so they come back unchanged.
 - External-tool steps failed for a command in a folder with a space (`C:\Program Files\...`), and an argument with
@@ -171,7 +175,7 @@ inside code too); `install.cmd` removes that one if installed, so links do not a
 
 A **Debug** tab in the bottom panel (next to Terminal and Debug Console) laid out like PyCharm's Debug tool window.
 It works with any debugger; it is made for Python (the **Python Debugger** extension, `ms-python.debugpy`).
-Start debugging as usual (F5, the Run and Debug view, or CharmRun's Debug button); when the program stops, the
+Start debugging as usual (F5, the Run and Debug view, or PyCharm-style Run's Debug button); when the program stops, the
 panel comes forward.
 
 | Part | What it does |
@@ -179,7 +183,7 @@ panel comes forward.
 | Session tabs | One tab per debug session (`car`, `main`, ...): a dot shows running, stopped or ended. An ended session keeps its tab (and console) until you close it with ×; closing a running one stops it. |
 | **Threads & Variables** | Left: the thread list (`MainThread`, ...) and the stopped thread's frames (`step, car.py:15`); click a frame to open its line and see its variables. Right: the frame's local variables as a tree, PyCharm-style: `odometer = {int} 5`, `self = {Car} <__main__.Car object at ...>`; other scopes (Globals) below. |
 | Evaluate / watches | The box above the tree: **Enter** evaluates in the selected frame and shows `result = ...` at the top; **Ctrl+Shift+Enter** adds a watch (blue, at the top of every stop; × removes it). |
-| **Console** | The program's output (when it writes to the Debug Console: CharmRun's *Internal console* terminal option, or `"console": "internalConsole"`), and a `>>>` prompt that runs Python in the selected frame. |
+| **Console** | The program's output (when it writes to the Debug Console: PyCharm-style Run's *Internal console* terminal option, or `"console": "internalConsole"`), and a `>>>` prompt that runs Python in the selected frame. |
 | Toolbar | Rerun, Stop, Resume (F5), Pause, Step Over (F10), Step Into (F11), Step Out (Shift+F11), View Breakpoints, Mute Breakpoints. Steps act on the thread shown in the panel. |
 | Frames from anywhere | **Ctrl+Alt+↑ / Ctrl+Alt+↓** (⌘⌥↑ / ⌘⌥↓ on macOS) move up and down the call stack while stopped, from any editor, as in PyCharm. (While debugging, this replaces VS Code's *Add Cursor Above / Below* on those keys.) |
 | Protected Attributes | Python objects show their protected (`_x`), special (`__x__`) and function members in groups, as PyCharm does. Setting `aspycharm.debug.groupAttributes` (default on); a launch configuration with its own `variablePresentation` wins. |

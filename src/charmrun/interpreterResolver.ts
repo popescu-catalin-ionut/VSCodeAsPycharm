@@ -13,7 +13,7 @@ export class InterpreterResolver {
         return interpreter;
       }
       vscode.window.showErrorMessage(
-        `CharmRun: Interpreter "${interpreter}" ${problem}. Fix the Python interpreter in the run configuration.`
+        `PyCharm-style Run: Interpreter "${interpreter}" ${problem}. Fix the Python interpreter in the run configuration.`
       );
       return undefined;
     }
@@ -51,7 +51,7 @@ export class InterpreterResolver {
       }
       if (isExplicitPath(defaultPath)) {
         vscode.window.showErrorMessage(
-          `CharmRun: python.defaultInterpreterPath "${defaultPath}" ${problem}.`
+          `PyCharm-style Run: python.defaultInterpreterPath "${defaultPath}" ${problem}.`
         );
         return undefined;
       }
@@ -65,7 +65,7 @@ export class InterpreterResolver {
     }
 
     vscode.window.showErrorMessage(
-      'CharmRun: No Python interpreter found. Install the Python extension or specify a custom interpreter path.'
+      'PyCharm-style Run: No Python interpreter found. Install the Python extension or specify a custom interpreter path.'
     );
     return undefined;
   }
@@ -127,7 +127,7 @@ export class InterpreterResolver {
     const selectAction = 'Select Interpreter';
     void vscode.window
       .showErrorMessage(
-        `CharmRun: The interpreter selected in the Python extension, "${pythonPath}", ${problem}.`,
+        `PyCharm-style Run: The interpreter selected in the Python extension, "${pythonPath}", ${problem}.`,
         selectAction
       )
       .then((choice) => {

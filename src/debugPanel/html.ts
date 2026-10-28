@@ -131,7 +131,7 @@ export function getDebugPanelHtml(cspSource: string, nonce: string): string {
     <div id="console-out"></div>
     <input class="line" id="console-in" placeholder=">>> run Python in the selected frame (Enter)" spellcheck="false">
   </div>
-  <div id="empty">No debug session. Start one with Run &gt; Start Debugging (F5), or CharmRun's Debug button.</div>
+  <div id="empty">No debug session. Start one with Run &gt; Start Debugging (F5), or PyCharm-style Run's Debug button.</div>
 
 <script nonce="${nonce}">
 (function () {

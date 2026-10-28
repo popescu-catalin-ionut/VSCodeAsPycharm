@@ -20,14 +20,14 @@ export function registerCommands(
       const activeId = configStore.getActiveConfigId();
       if (!activeId) {
         vscode.window.showInformationMessage(
-          'CharmRun: No active configuration selected.'
+          'PyCharm-style Run: No active configuration selected.'
         );
         return;
       }
       const found = configStore.findConfigById(activeId);
       if (!found) {
         vscode.window.showErrorMessage(
-          'CharmRun: Active configuration not found.'
+          'PyCharm-style Run: Active configuration not found.'
         );
         return;
       }
@@ -41,14 +41,14 @@ export function registerCommands(
       const activeId = configStore.getActiveConfigId();
       if (!activeId) {
         vscode.window.showInformationMessage(
-          'CharmRun: No active configuration selected.'
+          'PyCharm-style Run: No active configuration selected.'
         );
         return;
       }
       const found = configStore.findConfigById(activeId);
       if (!found) {
         vscode.window.showErrorMessage(
-          'CharmRun: Active configuration not found.'
+          'PyCharm-style Run: Active configuration not found.'
         );
         return;
       }
@@ -105,7 +105,7 @@ export function registerCommands(
         [
           {
             label: '$(add) Create new configuration',
-            detail: 'Add a new CharmRun-managed entry to .vscode/launch.json',
+            detail: 'Add a new PyCharm-style Run entry to .vscode/launch.json',
             action: 'create' as const,
           },
           ...adoptable.map((item) => ({
@@ -139,7 +139,7 @@ export function registerCommands(
       );
       if (!adopted) {
         vscode.window.showErrorMessage(
-          'CharmRun: Failed to adopt the selected launch configuration.'
+          'PyCharm-style Run: Failed to adopt the selected launch configuration.'
         );
         return;
       }
@@ -155,7 +155,7 @@ export function registerCommands(
       const adoptable = configStore.getAdoptableConfigurations();
       if (adoptable.length === 0) {
         vscode.window.showInformationMessage(
-          'CharmRun: No unmanaged Python launch configurations found in launch.json.'
+          'PyCharm-style Run: No unmanaged Python launch configurations found in launch.json.'
         );
         return;
       }
@@ -172,7 +172,7 @@ export function registerCommands(
           item,
         })),
         {
-          placeHolder: 'Select a Python launch configuration to manage with CharmRun',
+          placeHolder: 'Select a Python launch configuration to manage with PyCharm-style Run',
         }
       );
 
@@ -186,7 +186,7 @@ export function registerCommands(
       );
       if (!adopted) {
         vscode.window.showErrorMessage(
-          'CharmRun: Failed to adopt the selected launch configuration.'
+          'PyCharm-style Run: Failed to adopt the selected launch configuration.'
         );
         return;
       }
@@ -390,7 +390,7 @@ export function registerCommands(
 async function getWorkspaceFolder(): Promise<vscode.WorkspaceFolder | undefined> {
   const folders = vscode.workspace.workspaceFolders;
   if (!folders || folders.length === 0) {
-    vscode.window.showErrorMessage('CharmRun: No workspace folder open.');
+    vscode.window.showErrorMessage('PyCharm-style Run: No workspace folder open.');
     return undefined;
   }
   if (folders.length === 1) {

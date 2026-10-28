@@ -2,7 +2,7 @@
   "name": "aspycharm",
   "displayName": "AsPycharm",
   "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun) + Ctrl+Click links in Python docstrings and comments (rufatpro py-doc-links) + a PyCharm-style Debug panel, as one extension.",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "repository": {
     "type": "git",
     "url": "http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm"
@@ -664,87 +664,87 @@
       {
         "command": "charmrun.runConfiguration",
         "title": "Run Configuration",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(play)"
       },
       {
         "command": "charmrun.debugConfiguration",
         "title": "Debug Configuration",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(bug)"
       },
       {
         "command": "charmrun.runCurrentFile",
         "title": "Run Current Python File",
-        "category": "CharmRun"
+        "category": "PyCharm-style Run"
       },
       {
         "command": "charmrun.debugCurrentFile",
         "title": "Debug Current Python File",
-        "category": "CharmRun"
+        "category": "PyCharm-style Run"
       },
       {
         "command": "charmrun.openConfigurationFlow",
         "title": "Add Configuration",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(add)"
       },
       {
         "command": "charmrun.createConfiguration",
         "title": "Create Configuration",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(add)"
       },
       {
         "command": "charmrun.editConfiguration",
         "title": "Edit Configuration",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(edit)"
       },
       {
         "command": "charmrun.deleteConfiguration",
         "title": "Delete Configuration",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(trash)"
       },
       {
         "command": "charmrun.duplicateConfiguration",
         "title": "Duplicate Configuration",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(copy)"
       },
       {
         "command": "charmrun.selectActiveConfig",
         "title": "Select Active Configuration",
-        "category": "CharmRun"
+        "category": "PyCharm-style Run"
       },
       {
         "command": "charmrun.adoptLaunchConfiguration",
         "title": "Adopt launch.json Configuration",
-        "category": "CharmRun"
+        "category": "PyCharm-style Run"
       },
       {
         "command": "charmrun.refreshConfigurations",
         "title": "Refresh Configurations",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(refresh)"
       },
       {
         "command": "charmrun.runConfigFromTree",
         "title": "Run",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(play)"
       },
       {
         "command": "charmrun.debugConfigFromTree",
         "title": "Debug",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(bug)"
       },
       {
         "command": "charmrun.treeItemActivated",
         "title": "Open Run Configuration",
-        "category": "CharmRun"
+        "category": "PyCharm-style Run"
       },
       {
         "command": "aspycharm.debug.showPanel",
@@ -764,19 +764,19 @@
       {
         "command": "charmrun.runFile",
         "title": "Run Python File (PyCharm-style)",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(play)"
       },
       {
         "command": "charmrun.debugFile",
         "title": "Debug Python File (PyCharm-style)",
-        "category": "CharmRun",
+        "category": "PyCharm-style Run",
         "icon": "$(debug-alt)"
       },
       {
         "command": "charmrun.modifyFileConfiguration",
         "title": "Modify Run Configuration...",
-        "category": "CharmRun"
+        "category": "PyCharm-style Run"
       }
     ],
     "viewsContainers": {
@@ -788,7 +788,7 @@
         },
         {
           "id": "charmrun-explorer",
-          "title": "CharmRun",
+          "title": "PyCharm-style Run",
           "icon": "resources/charmrun/icon.svg"
         }
       ],
@@ -839,7 +839,7 @@
     "viewsWelcome": [
       {
         "view": "charmrun.configurationsView",
-        "contents": "CharmRun stores managed Python run configurations in `.vscode/launch.json`.\n[Add Configuration](command:charmrun.openConfigurationFlow)"
+        "contents": "PyCharm-style Run stores managed Python run configurations in `.vscode/launch.json`.\n[Add Configuration](command:charmrun.openConfigurationFlow)"
       }
     ]
   },

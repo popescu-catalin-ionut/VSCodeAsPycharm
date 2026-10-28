@@ -62,7 +62,7 @@ const USER_LAUNCH = `{
 }
 `;
 
-suite('CharmRun: launch.json store', () => {
+suite('PyCharm-style Run: launch.json store', () => {
   let folder: WorkspaceFolder;
   let store: ConfigStore;
   let warnings: ReturnType<typeof muteWarnings>;
@@ -182,7 +182,7 @@ suite('CharmRun: launch.json store', () => {
   });
 });
 
-suite('CharmRun: argument text in the editor', () => {
+suite('PyCharm-style Run: argument text in the editor', () => {
   const CASES: string[][] = [
     [],
     ['a', 'b'],
@@ -220,7 +220,7 @@ suite('CharmRun: argument text in the editor', () => {
   });
 });
 
-suite('CharmRun: variables, steps and interpreters', () => {
+suite('PyCharm-style Run: variables, steps and interpreters', () => {
   test('variables: workspace folder, env, and unknown ones left as written', () => {
     const folder = tempFolder();
     process.env.ASPYCHARM_TEST_VAR = 'hello';
@@ -256,7 +256,7 @@ suite('CharmRun: variables, steps and interpreters', () => {
   });
 });
 
-suite('CharmRun: external tool steps', function () {
+suite('PyCharm-style Run: external tool steps', function () {
   this.timeout(20000);
   let folder: WorkspaceFolder;
   let errors: string[];
@@ -336,7 +336,23 @@ suite('CharmRun: external tool steps', function () {
   });
 });
 
-suite('CharmRun: wired into the extension', () => {
+suite('PyCharm-style Run: wired into the extension', () => {
+  test('shown everywhere as "PyCharm-style Run", never as "CharmRun" (IDs and launch.json keys keep charmrun)', () => {
+    const ext = extensions.getExtension('catalinpop.aspycharm')!;
+    const contributes = ext.packageJSON.contributes;
+    assert.ok(!JSON.stringify(contributes).includes('CharmRun'), 'no "CharmRun" in menus, views, titles or categories');
+    assert.ok(contributes.viewsContainers.activitybar.some((v: { id: string; title: string }) => v.id === 'charmrun-explorer' && v.title === 'PyCharm-style Run'));
+    const ours = contributes.commands.filter((c: { command: string }) => c.command.startsWith('charmrun.'));
+    assert.ok(ours.length > 10 && ours.every((c: { category: string }) => c.category === 'PyCharm-style Run'));
+    // Messages, Output channel names, progress titles: no string in the shipped code says CharmRun.
+    const shipped = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? shipped(path.join(dir, e.name)) : e.name.endsWith('.js') ? [path.join(dir, e.name)] : []);
+    for (const file of [...shipped(path.join(ext.extensionPath, 'out', 'charmrun')), path.join(ext.extensionPath, 'out', 'debugPanel', 'html.js')]) {
+      const hit = fs.readFileSync(file, 'utf8').split('\n').find((line) => /['"`][^'"`]*CharmRun/.test(line));
+      assert.strictEqual(hit, undefined, `${path.basename(file)}: ${hit?.trim()}`);
+    }
+  });
+
   test('Duplicate Configuration from the Command Palette asks which one (bug: did nothing)', async () => {
     const original = window.showInformationMessage;
     const shown: string[] = [];

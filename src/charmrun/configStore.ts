@@ -345,7 +345,7 @@ export class ConfigStore implements vscode.Disposable {
       if (this.warnedBroken.get(configPath) !== text) {
         this.warnedBroken.set(configPath, text);
         vscode.window.showWarningMessage(
-          `CharmRun: Failed to read launch config: ${configPath}`
+          `PyCharm-style Run: Failed to read launch config: ${configPath}`
         );
       }
       return { version: '0.2.0', configurations: [], rawIndexes: [], text, broken: true };
@@ -355,7 +355,7 @@ export class ConfigStore implements vscode.Disposable {
   /** The text to edit: the file as it is, or a new launch.json. Refuses a file that could not be parsed. */
   private startText(launchFile: LaunchJsonFile): string {
     if (launchFile.broken) {
-      throw this.fail('launch.json has a syntax error. Fix it first; CharmRun will not overwrite it.');
+      throw this.fail('launch.json has a syntax error. Fix it first; PyCharm-style Run will not overwrite it.');
     }
     let text = launchFile.text ?? '{\n  "version": "0.2.0",\n  "configurations": []\n}\n';
     const root = parse(text, [], PARSE_OPTIONS) as { configurations?: unknown };
@@ -382,7 +382,7 @@ export class ConfigStore implements vscode.Disposable {
 
   /** Shows the problem and returns an error for the caller to throw. */
   private fail(message: string): Error {
-    void vscode.window.showErrorMessage(`CharmRun: ${message}`);
+    void vscode.window.showErrorMessage(`PyCharm-style Run: ${message}`);
     return new Error(message);
   }
 

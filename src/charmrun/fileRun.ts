@@ -1,5 +1,5 @@
 // PyCharm's right-click on a Python file: Run 'main', Debug 'main', Modify Run Configuration...
-// Uses the CharmRun configuration that runs that file; if there is none, a temporary one named after the file
+// PyCharm-style Run: uses the run configuration that runs that file; if there is none, a temporary one named after the file
 // (as PyCharm does), which is only saved to launch.json when you save it from Modify Run Configuration.
 import * as fs from 'fs';
 import * as path from 'path';
@@ -58,13 +58,13 @@ export function registerFileRunCommands(
     const file = uri instanceof vscode.Uri ? uri : vscode.window.activeTextEditor?.document.uri;
     const open = file && vscode.workspace.textDocuments.find((d) => d.uri.toString() === file.toString());
     if (!file || file.scheme !== 'file' || !isRunnablePython(file.fsPath, open?.languageId)) {
-      void vscode.window.showErrorMessage('CharmRun: Select a Python (.py) file to run.');
+      void vscode.window.showErrorMessage('PyCharm-style Run: Select a Python (.py) file to run.');
       return undefined;
     }
     const folder = vscode.workspace.getWorkspaceFolder(file);
     if (!folder) {
       void vscode.window.showErrorMessage(
-        `CharmRun: ${path.basename(file.fsPath)} is not in an open folder. Open its folder (File > Open Folder) to run it.`
+        `PyCharm-style Run: ${path.basename(file.fsPath)} is not in an open folder. Open its folder (File > Open Folder) to run it.`
       );
       return undefined;
     }

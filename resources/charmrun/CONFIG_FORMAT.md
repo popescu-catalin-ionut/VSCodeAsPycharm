@@ -1,10 +1,10 @@
 # Configuration Format
 
-CharmRun stores managed run configurations in:
+PyCharm-style Run (ported from CharmRun) stores managed run configurations in:
 
 `<workspace>/.vscode/launch.json`
 
-CharmRun only manages Python `debugpy` launch entries that it created itself or that the user explicitly adopted.
+PyCharm-style Run only manages Python `debugpy` launch entries that it created itself or that the user explicitly adopted.
 
 ## Managed Entry Shape
 
@@ -59,7 +59,7 @@ CharmRun only manages Python `debugpy` launch entries that it created itself or 
 - `runMode` -> `charmrunRunMode`
 - `preRun` -> `charmrunPreRun` (omitted when there are no steps)
 
-CharmRun metadata:
+PyCharm-style Run metadata (the keys keep CharmRun's `charmrun` prefix):
 
 - `charmrunManaged: true`
 - `charmrunId: string`
@@ -88,7 +88,7 @@ Behavior:
   for its debug session to terminate. VS Code exposes no exit code for debug
   sessions, so such a step fails only when the configuration cannot start.
 - A step of type `externalTool` fails on a non-zero exit code, and its output is
-  written to the `CharmRun Before Launch` output channel.
+  written to the `PyCharm-style Run: Before Launch` output channel.
 - A step of type `task` fails on a non-zero task process exit code.
 - Circular references between configurations are rejected when the step is
   reached, instead of recursing.
@@ -97,11 +97,11 @@ Behavior:
 
 ## Adoption
 
-Use `CharmRun: Adopt launch.json Configuration` to take over an existing Python `debugpy` launch config in place. CharmRun adds its metadata to that same `launch.json` entry and then edits it through the GUI.
+Use `PyCharm-style Run: Adopt launch.json Configuration` to take over an existing Python `debugpy` launch config in place. PyCharm-style Run adds its metadata to that same `launch.json` entry and then edits it through the GUI.
 
 ## Preserved Fields
 
-CharmRun preserves unknown fields on managed Python launch entries. Existing fields such as `justMyCode` or `subProcess` remain in `launch.json` when you edit the config in the GUI. (`envFile` is no longer in this group - it is a managed field, editable from the Env File box in the configuration editor.)
+PyCharm-style Run preserves unknown fields on managed Python launch entries. Existing fields such as `justMyCode` or `subProcess` remain in `launch.json` when you edit the config in the GUI. (`envFile` is no longer in this group - it is a managed field, editable from the Env File box in the configuration editor.)
 
 ## Validation Rules
 
@@ -111,7 +111,7 @@ CharmRun preserves unknown fields on managed Python launch entries. Existing fie
 
 ## Variable Placeholders
 
-CharmRun resolves:
+PyCharm-style Run resolves:
 
 - `${workspaceFolder}`
 - `${workspaceFolderBasename}`
@@ -126,4 +126,4 @@ CharmRun resolves:
 ## Multi-Root Behavior
 
 Each workspace folder can have its own `.vscode/launch.json`.  
-CharmRun shows all CharmRun-managed configurations across workspace folders in one tree.
+PyCharm-style Run shows all of its managed configurations across workspace folders in one tree.

@@ -4,14 +4,14 @@ export type RunMode = 'run' | 'debug';
 export type PreRunStepType = 'configuration' | 'externalTool' | 'task';
 
 /**
- * A single "before launch" step, PyCharm-style: run another CharmRun
+ * A single "before launch" step, PyCharm-style: run another run
  * configuration, an external tool, or a VS Code task before the main launch.
  */
 export interface PreRunStep {
   id: string;
   type: PreRunStepType;
   enabled: boolean;
-  /** type === 'configuration': id of another CharmRun-managed configuration */
+  /** type === 'configuration': id of another managed run configuration */
   configId: string;
   /** type === 'externalTool': executable or command to run */
   command: string;

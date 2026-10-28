@@ -10,11 +10,11 @@ import { registerFileRunCommands } from './fileRun';
 let outputChannel: vscode.OutputChannel | undefined;
 
 export function activateCharmRun(context: vscode.ExtensionContext): void {
-  outputChannel = vscode.window.createOutputChannel('CharmRun');
+  outputChannel = vscode.window.createOutputChannel('PyCharm-style Run');
   context.subscriptions.push(outputChannel);
 
   try {
-    outputChannel.appendLine('Activating CharmRun');
+    outputChannel.appendLine('Activating PyCharm-style Run');
 
     const configStore = new ConfigStore(context);
     const treeProvider = new ConfigTreeProvider(configStore);
@@ -36,11 +36,11 @@ export function activateCharmRun(context: vscode.ExtensionContext): void {
     outputChannel.appendLine('Status bar shown');
 
     context.subscriptions.push(treeView, configStore, statusBar, editorProvider, runner);
-    outputChannel.appendLine('CharmRun activation complete');
+    outputChannel.appendLine('PyCharm-style Run activation complete');
   } catch (error) {
     const message = error instanceof Error ? error.stack ?? error.message : String(error);
     outputChannel.appendLine(`Activation failed: ${message}`);
-    void vscode.window.showErrorMessage('CharmRun failed to activate. See Output > CharmRun for details.');
+    void vscode.window.showErrorMessage('PyCharm-style Run failed to activate. See Output > PyCharm-style Run for details.');
   }
 }
 

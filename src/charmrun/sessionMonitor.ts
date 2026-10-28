@@ -100,7 +100,7 @@ export class SessionMonitor implements vscode.Disposable {
           `[run] Could not write to output file "${outputFile}": ${state.outputFileError}`
         );
         void vscode.window.showErrorMessage(
-          `CharmRun: Could not write console output to "${outputFile}": ${state.outputFileError}`
+          `PyCharm-style Run: Could not write console output to "${outputFile}": ${state.outputFileError}`
         );
       }
     };
@@ -202,7 +202,7 @@ export class SessionMonitor implements vscode.Disposable {
     if (state.adapterError) {
       this.output.appendLine(`[run] "${name}" failed: ${state.adapterError}`);
       void this.showError(
-        `CharmRun: "${name}" failed to run: ${state.adapterError}`,
+        `PyCharm-style Run: "${name}" failed to run: ${state.adapterError}`,
         session
       );
       return;
@@ -216,7 +216,7 @@ export class SessionMonitor implements vscode.Disposable {
     this.output.appendLine(`[run] "${name}" exited with code ${state.exitCode}`);
     if (state.exitCode !== 0) {
       void this.showError(
-        `CharmRun: "${name}" exited with code ${state.exitCode}.`,
+        `PyCharm-style Run: "${name}" exited with code ${state.exitCode}.`,
         session
       );
     }

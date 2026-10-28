@@ -32,7 +32,7 @@ export interface ExecuteOptions {
 
 export class Runner implements vscode.Disposable {
   private interpreterResolver = new InterpreterResolver();
-  private output = vscode.window.createOutputChannel('CharmRun Before Launch');
+  private output = vscode.window.createOutputChannel('PyCharm-style Run: Before Launch');
   private preRunRunner: PreRunRunner;
   private sessionMonitor: SessionMonitor;
 
@@ -63,7 +63,7 @@ export class Runner implements vscode.Disposable {
         }`
       );
       vscode.window.showErrorMessage(
-        `CharmRun: Could not run "${config.name}": ${describeError(error)}`
+        `PyCharm-style Run: Could not run "${config.name}": ${describeError(error)}`
       );
       return false;
     }
@@ -78,7 +78,7 @@ export class Runner implements vscode.Disposable {
     const errors = this.validate(config);
     if (errors.length > 0) {
       vscode.window.showErrorMessage(
-        `CharmRun: ${errors.join('; ')}`
+        `PyCharm-style Run: ${errors.join('; ')}`
       );
       return false;
     }
@@ -86,7 +86,7 @@ export class Runner implements vscode.Disposable {
     const chain = options.chain ?? new Set<string>();
     if (chain.has(config.id)) {
       vscode.window.showErrorMessage(
-        `CharmRun: Circular before-launch reference at "${config.name}".`
+        `PyCharm-style Run: Circular before-launch reference at "${config.name}".`
       );
       return false;
     }
@@ -145,7 +145,7 @@ export class Runner implements vscode.Disposable {
       const install = 'Install Python Debugger';
       void vscode.window
         .showErrorMessage(
-          'CharmRun: The Python Debugger extension (ms-python.debugpy) is required to run configurations.',
+          'PyCharm-style Run: The Python Debugger extension (ms-python.debugpy) is required to run configurations.',
           install
         )
         .then((choice) => {
@@ -168,7 +168,7 @@ export class Runner implements vscode.Disposable {
         `[run] VS Code could not start a debug session for "${debugConfig.name}"`
       );
       vscode.window.showErrorMessage(
-        `CharmRun: Could not start "${debugConfig.name}". Check the Debug Console and Output > CharmRun for details.`
+        `PyCharm-style Run: Could not start "${debugConfig.name}". Check the Debug Console and Output > PyCharm-style Run for details.`
       );
     }
     return started;
@@ -200,14 +200,14 @@ export class Runner implements vscode.Disposable {
   ): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
-      vscode.window.showErrorMessage('CharmRun: No active editor.');
+      vscode.window.showErrorMessage('PyCharm-style Run: No active editor.');
       return;
     }
 
     const filePath = editor.document.uri.fsPath;
     if (!filePath.endsWith('.py')) {
       vscode.window.showErrorMessage(
-        'CharmRun: Active file is not a Python file.'
+        'PyCharm-style Run: Active file is not a Python file.'
       );
       return;
     }
@@ -235,7 +235,7 @@ export class Runner implements vscode.Disposable {
       await this.startDebugging(folder, debugConfig, mode);
     } catch (error) {
       vscode.window.showErrorMessage(
-        `CharmRun: Could not run ${path.basename(filePath)}: ${describeError(error)}`
+        `PyCharm-style Run: Could not run ${path.basename(filePath)}: ${describeError(error)}`
       );
     }
   }
@@ -285,7 +285,7 @@ export class Runner implements vscode.Disposable {
 
     const missing = this.findMissingPaths(debugConfig, folder);
     if (missing) {
-      vscode.window.showErrorMessage(`CharmRun: "${config.name}": ${missing}`);
+      vscode.window.showErrorMessage(`PyCharm-style Run: "${config.name}": ${missing}`);
       return undefined;
     }
 
@@ -301,7 +301,7 @@ export class Runner implements vscode.Disposable {
         fs.writeFileSync(absoluteOutputPath, '');
       } catch (error) {
         vscode.window.showErrorMessage(
-          `CharmRun: Could not write output file "${absoluteOutputPath}": ${describeError(
+          `PyCharm-style Run: Could not write output file "${absoluteOutputPath}": ${describeError(
             error
           )}`
         );

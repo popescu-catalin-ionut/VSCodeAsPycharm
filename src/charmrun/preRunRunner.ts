@@ -43,7 +43,7 @@ export class PreRunRunner {
     return vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: 'CharmRun: before launch',
+        title: 'PyCharm-style Run: before launch',
         cancellable: true,
       },
       async (progress, token) => {
@@ -244,7 +244,7 @@ export class PreRunRunner {
 
   private fail(message: string): void {
     this.output.appendLine(`[before launch] ${message}`);
-    void vscode.window.showErrorMessage(`CharmRun: ${message}`);
+    void vscode.window.showErrorMessage(`PyCharm-style Run: ${message}`);
   }
 }
 
