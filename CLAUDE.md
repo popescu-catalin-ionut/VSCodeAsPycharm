@@ -5,7 +5,7 @@ Explorer "Refresh Explorer" menu entry (from LLLLinda/vscode-extension-refresh) 
 Alt+P print (ported from un4gt/pycharm-like-snippets, MIT: `snippets/`, `src/services/printExpression.ts`) + Python run
 configurations (ported from yingbo/charmrun 1.6.1, MIT: `src/charmrun/`, `resources/charmrun/`) + Ctrl+Click links in
 docstrings and comments (JetBrains plugin rufatpro/plugins py-doc-links, MIT, rewritten in TypeScript: `src/pyDocLinks/`,
-`resources/pyDocLinks/`), as one extension
+`resources/pyDocLinks/`) + our PyCharm-style Debug panel (`src/debugPanel/`), as one extension
 `catalinpop.aspycharm`. Repository: Forgejo `catalinpop/VSCodeAsPycharm`
 (`git@git-local:catalinpop/VSCodeAsPycharm.git`), branch `main`, checkout `D:\VSCodeAsPycharm`. Install and build steps
 are in [README.md](README.md). Upstream's own agent notes are in [AGENTS.md](AGENTS.md).

@@ -11,6 +11,7 @@ It merges five extensions and plugins, each reviewed line by line (the first two
 | **PyCharm-like snippets** | [un4gt/pycharm-like-snippets](https://github.com/un4gt/pycharm-like-snippets) v0.1.0 (MIT, licence in `snippets/`), ported at commit `505c2d1` | 32 PyCharm-style Python snippets and **Alt+P** to wrap a line in `print(...)` |
 | **CharmRun** | [yingbo/charmrun](https://github.com/yingbo/charmrun) v1.6.1 (MIT, licence in `resources/charmrun/`), ported at commit `2327ba4` into `src/charmrun/` | PyCharm-style Python run configurations: a sidebar, a form editor, Run / Debug buttons, before-launch steps |
 | **Python Doc Links** | [rufatpro/plugins `jetbrains/py-doc-links`](https://github.com/rufatpro/plugins/tree/main/jetbrains/py-doc-links) 0.2.10 (MIT, licence in `resources/pyDocLinks/`), a JetBrains plugin rewritten in TypeScript from commit `bae1de9` into `src/pyDocLinks/` | **Ctrl+Click** on `file.py` and Sphinx references (`:py:func:`, `:class:`, ...) in docstrings and comments |
+| **PyCharm-style Debug panel** | our own, in `src/debugPanel/` | PyCharm's Debug tool window: session tabs, Threads & Variables, Console, the debug toolbar |
 
 Our changes on top of upstream: the extension ID is `catalinpop.aspycharm` (so the Marketplace never auto-updates it
 over our build), the Refresh Explorer menu entry, and these fixes (each with a test that fails on upstream's code):
@@ -145,6 +146,31 @@ Compared with the JetBrains plugin (each checked against its own patterns and ru
 Not taken: the Kotlin/Gradle build (rewritten for VS Code; the Gradle wrapper jar was checked against Gradle's
 published checksums and is genuine) and the author's separate VS Code version (`rufat.py-doc-links`, which links
 inside code too); `install.cmd` removes that one if installed, so links do not appear twice.
+
+### PyCharm-style Debug panel
+
+A **Debug** tab in the bottom panel (next to Terminal and Debug Console) laid out like PyCharm's Debug tool window.
+It works with any debugger; it is made for Python (the **Python Debugger** extension, `ms-python.debugpy`).
+Start debugging as usual (F5, the Run and Debug view, or CharmRun's Debug button); when the program stops, the
+panel comes forward.
+
+| Part | What it does |
+|---|---|
+| Session tabs | One tab per debug session (`car`, `main`, ...): a dot shows running, stopped or ended. An ended session keeps its tab (and console) until you close it with ×; closing a running one stops it. |
+| **Threads & Variables** | Left: the thread list (`MainThread`, ...) and the stopped thread's frames (`step, car.py:15`); click a frame to open its line and see its variables. Right: the frame's local variables as a tree, PyCharm-style: `odometer = {int} 5`, `self = {Car} <__main__.Car object at ...>`; other scopes (Globals) below. |
+| Evaluate / watches | The box above the tree: **Enter** evaluates in the selected frame and shows `result = ...` at the top; **Ctrl+Shift+Enter** adds a watch (blue, at the top of every stop; × removes it). |
+| **Console** | The program's output (when it writes to the Debug Console: CharmRun's *Internal console* terminal option, or `"console": "internalConsole"`), and a `>>>` prompt that runs Python in the selected frame. |
+| Toolbar | Rerun, Stop, Resume (F5), Pause, Step Over (F10), Step Into (F11), Step Out (Shift+F11), View Breakpoints, Mute Breakpoints. Steps act on the thread shown in the panel. |
+| Frames from anywhere | **Ctrl+Alt+↑ / Ctrl+Alt+↓** (⌘⌥↑ / ⌘⌥↓ on macOS) move up and down the call stack while stopped, from any editor, as in PyCharm. (While debugging, this replaces VS Code's *Add Cursor Above / Below* on those keys.) |
+| Protected Attributes | Python objects show their protected (`_x`), special (`__x__`) and function members in groups, as PyCharm does. Setting `aspycharm.debug.groupAttributes` (default on); a launch configuration with its own `variablePresentation` wins. |
+
+Settings: `aspycharm.debug.showPanelOnBreakpoint` (default on) brings the panel forward on every stop. *AsPycharm:
+Show PyCharm-style Debug Panel* opens it from the Command Palette.
+
+VS Code's own debug views (Variables, Watch, Call Stack in the Run and Debug sidebar, the floating toolbar) stay as
+they are; extensions cannot restyle them. The panel sits next to them; editor features (the current-line highlight,
+inline values, hovering a variable) are VS Code's own. Values from the debugged program are shown as text only.
+Tests: `src/test/suite/debugPanel.test.ts`, with a scripted debugger and the panel's page run against a fake page.
 
 ## Install on a machine (no Node needed)
 

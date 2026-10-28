@@ -1,8 +1,8 @@
 {
   "name": "aspycharm",
   "displayName": "AsPycharm",
-  "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun) + Ctrl+Click links in Python docstrings and comments (rufatpro py-doc-links), as one extension.",
-  "version": "1.3.0",
+  "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun) + Ctrl+Click links in Python docstrings and comments (rufatpro py-doc-links) + a PyCharm-style Debug panel, as one extension.",
+  "version": "2.0.0",
   "repository": {
     "type": "git",
     "url": "http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm"
@@ -18,7 +18,8 @@
     "run configuration",
     "launch.json",
     "docstring",
-    "sphinx"
+    "sphinx",
+    "debug"
   ],
   "icon": "resources/icon.png",
   "galleryBanner": {
@@ -61,210 +62,227 @@
         }
       }
     },
-    "configuration": {
-      "type": "object",
-      "title": "%ext.configuration.title%",
-      "properties": {
-        "compareFolders.folderLeft": {
-          "type": "string",
-          "description": "%ext.config.folderLeft.description%",
-          "default": "",
-          "scope": "resource"
-        },
-        "compareFolders.folderRight": {
-          "type": "string",
-          "description": "%ext.config.folderRight.description%",
-          "default": "",
-          "scope": "resource"
-        },
-        "compareFolders.compareContent": {
-          "type": "boolean",
-          "default": true,
-          "description": "%ext.config.compareContent.description%",
-          "scope": "resource"
-        },
-        "compareFolders.ignoreLineEnding": {
-          "type": "boolean",
-          "default": false,
-          "description": "%ext.config.ignoreLineEnding.description%",
-          "scope": "resource"
-        },
-        "compareFolders.ignoreWhiteSpaces": {
-          "type": "boolean",
-          "default": false,
-          "description": "%ext.config.ignoreWhiteSpaces.description%",
-          "scope": "resource"
-        },
-        "compareFolders.ignoreAllWhiteSpaces": {
-          "type": "boolean",
-          "default": false,
-          "description": "%ext.config.ignoreAllWhiteSpaces.description%",
-          "scope": "resource"
-        },
-        "compareFolders.ignoreEmptyLines": {
-          "type": "boolean",
-          "default": false,
-          "description": "%ext.config.ignoreEmptyLines.description%",
-          "scope": "resource"
-        },
-        "compareFolders.ignoreFileNameCase": {
-          "type": "boolean",
-          "default": true,
-          "description": "%ext.config.ignoreFileNameCase.description%",
-          "scope": "resource"
-        },
-        "compareFolders.ignoreExtension": {
-          "type": "array",
-          "default": [],
-          "description": "%ext.config.ignoreExtension.description%",
-          "scope": "resource"
-        },
-        "compareFolders.includeFilter": {
-          "type": "array",
-          "description": "%ext.config.includeFilter.description%",
-          "scope": "resource"
-        },
-        "compareFolders.excludeFilter": {
-          "type": "array",
-          "description": "%ext.config.excludeFilter.description%",
-          "scope": "resource"
-        },
-        "compareFolders.respectGitIgnore": {
-          "type": "boolean",
-          "description": "%ext.config.respectGitIgnore.description%",
-          "scope": "resource"
-        },
-        "compareFolders.diffViewTitle": {
-          "type": "string",
-          "default": "name only",
-          "enum": [
-            "name only",
-            "compared path",
-            "full path"
-          ],
-          "enumDescriptions": [
-            "%ext.config.diffViewTitle.enum.nameOnly%",
-            "%ext.config.diffViewTitle.enum.comparedPath%",
-            "%ext.config.diffViewTitle.enum.fullPath%"
-          ],
-          "markdownDescription": "%ext.config.diffViewTitle.description%",
-          "scope": "window"
-        },
-        "compareFolders.diffLayout": {
-          "type": "string",
-          "default": "local <> compared",
-          "enum": [
-            "local <> compared",
-            "compared <> local"
-          ],
-          "enumDescriptions": [
-            "%ext.config.diffLayout.enum.localCompared%",
-            "%ext.config.diffLayout.enum.comparedLocal%"
-          ],
-          "markdownDescription": "%ext.config.diffLayout.description%",
-          "scope": "window"
-        },
-        "compareFolders.defaultDiffViewMode": {
-          "type": "string",
-          "default": "tree",
-          "enum": [
-            "tree",
-            "list"
-          ],
-          "enumDescriptions": [
-            "%ext.config.defaultDiffViewMode.enum.tree%",
-            "%ext.config.defaultDiffViewMode.enum.list%"
-          ],
-          "scope": "window"
-        },
-        "compareFolders.showIdentical": {
-          "type": "boolean",
-          "default": false,
-          "description": "%ext.config.showIdentical.description%",
-          "scope": "resource"
-        },
-        "compareFolders.showFileCount": {
-          "type": "boolean",
-          "default": false,
-          "description": "%ext.config.showFileCount.description%",
-          "scope": "window"
-        },
-        "compareFolders.useDiffMerge": {
-          "type": "boolean",
-          "default": false,
-          "description": "%ext.config.useDiffMerge.description%",
-          "scope": "window"
-        },
-        "compareFolders.warnBeforeDelete": {
-          "type": "boolean",
-          "default": true,
-          "description": "%ext.config.warnBeforeDelete.description%",
-          "scope": "resource"
-        },
-        "compareFolders.warnBeforeTake": {
-          "type": "boolean",
-          "default": true,
-          "description": "%ext.config.warnBeforeTake.description%",
-          "scope": "resource"
-        },
-        "compareFolders.ignoreStrings": {
-          "type": "array",
-          "default": [],
-          "items": {
-            "type": "string"
+    "configuration": [
+      {
+        "type": "object",
+        "title": "%ext.configuration.title%",
+        "properties": {
+          "compareFolders.folderLeft": {
+            "type": "string",
+            "description": "%ext.config.folderLeft.description%",
+            "default": "",
+            "scope": "resource"
           },
-          "description": "%ext.config.ignoreStrings.description%",
-          "scope": "resource"
-        },
-        "compareFolders.fileParsingRules": {
-          "type": "array",
-          "default": [],
-          "description": "%ext.config.fileParsingRules.description%",
-          "items": {
-            "type": "object",
-            "properties": {
-              "pattern": {
-                "type": "string",
-                "description": "%ext.config.fileParsingRules.pattern.description%"
-              },
-              "command": {
-                "type": "string",
-                "description": "%ext.config.fileParsingRules.command.description%"
-              },
-              "args": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "%ext.config.fileParsingRules.args.description%"
-              },
-              "workingDirectory": {
-                "type": "string",
-                "description": "%ext.config.fileParsingRules.workingDirectory.description%"
-              },
-              "timeout": {
-                "type": "number",
-                "default": 30000,
-                "description": "%ext.config.fileParsingRules.timeout.description%"
-              },
-              "env": {
-                "type": "object",
-                "description": "%ext.config.fileParsingRules.env.description%",
-                "additionalProperties": {
-                  "type": "string"
-                }
-              }
+          "compareFolders.folderRight": {
+            "type": "string",
+            "description": "%ext.config.folderRight.description%",
+            "default": "",
+            "scope": "resource"
+          },
+          "compareFolders.compareContent": {
+            "type": "boolean",
+            "default": true,
+            "description": "%ext.config.compareContent.description%",
+            "scope": "resource"
+          },
+          "compareFolders.ignoreLineEnding": {
+            "type": "boolean",
+            "default": false,
+            "description": "%ext.config.ignoreLineEnding.description%",
+            "scope": "resource"
+          },
+          "compareFolders.ignoreWhiteSpaces": {
+            "type": "boolean",
+            "default": false,
+            "description": "%ext.config.ignoreWhiteSpaces.description%",
+            "scope": "resource"
+          },
+          "compareFolders.ignoreAllWhiteSpaces": {
+            "type": "boolean",
+            "default": false,
+            "description": "%ext.config.ignoreAllWhiteSpaces.description%",
+            "scope": "resource"
+          },
+          "compareFolders.ignoreEmptyLines": {
+            "type": "boolean",
+            "default": false,
+            "description": "%ext.config.ignoreEmptyLines.description%",
+            "scope": "resource"
+          },
+          "compareFolders.ignoreFileNameCase": {
+            "type": "boolean",
+            "default": true,
+            "description": "%ext.config.ignoreFileNameCase.description%",
+            "scope": "resource"
+          },
+          "compareFolders.ignoreExtension": {
+            "type": "array",
+            "default": [],
+            "description": "%ext.config.ignoreExtension.description%",
+            "scope": "resource"
+          },
+          "compareFolders.includeFilter": {
+            "type": "array",
+            "description": "%ext.config.includeFilter.description%",
+            "scope": "resource"
+          },
+          "compareFolders.excludeFilter": {
+            "type": "array",
+            "description": "%ext.config.excludeFilter.description%",
+            "scope": "resource"
+          },
+          "compareFolders.respectGitIgnore": {
+            "type": "boolean",
+            "description": "%ext.config.respectGitIgnore.description%",
+            "scope": "resource"
+          },
+          "compareFolders.diffViewTitle": {
+            "type": "string",
+            "default": "name only",
+            "enum": [
+              "name only",
+              "compared path",
+              "full path"
+            ],
+            "enumDescriptions": [
+              "%ext.config.diffViewTitle.enum.nameOnly%",
+              "%ext.config.diffViewTitle.enum.comparedPath%",
+              "%ext.config.diffViewTitle.enum.fullPath%"
+            ],
+            "markdownDescription": "%ext.config.diffViewTitle.description%",
+            "scope": "window"
+          },
+          "compareFolders.diffLayout": {
+            "type": "string",
+            "default": "local <> compared",
+            "enum": [
+              "local <> compared",
+              "compared <> local"
+            ],
+            "enumDescriptions": [
+              "%ext.config.diffLayout.enum.localCompared%",
+              "%ext.config.diffLayout.enum.comparedLocal%"
+            ],
+            "markdownDescription": "%ext.config.diffLayout.description%",
+            "scope": "window"
+          },
+          "compareFolders.defaultDiffViewMode": {
+            "type": "string",
+            "default": "tree",
+            "enum": [
+              "tree",
+              "list"
+            ],
+            "enumDescriptions": [
+              "%ext.config.defaultDiffViewMode.enum.tree%",
+              "%ext.config.defaultDiffViewMode.enum.list%"
+            ],
+            "scope": "window"
+          },
+          "compareFolders.showIdentical": {
+            "type": "boolean",
+            "default": false,
+            "description": "%ext.config.showIdentical.description%",
+            "scope": "resource"
+          },
+          "compareFolders.showFileCount": {
+            "type": "boolean",
+            "default": false,
+            "description": "%ext.config.showFileCount.description%",
+            "scope": "window"
+          },
+          "compareFolders.useDiffMerge": {
+            "type": "boolean",
+            "default": false,
+            "description": "%ext.config.useDiffMerge.description%",
+            "scope": "window"
+          },
+          "compareFolders.warnBeforeDelete": {
+            "type": "boolean",
+            "default": true,
+            "description": "%ext.config.warnBeforeDelete.description%",
+            "scope": "resource"
+          },
+          "compareFolders.warnBeforeTake": {
+            "type": "boolean",
+            "default": true,
+            "description": "%ext.config.warnBeforeTake.description%",
+            "scope": "resource"
+          },
+          "compareFolders.ignoreStrings": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string"
             },
-            "required": [
-              "pattern",
-              "command",
-              "args"
-            ]
+            "description": "%ext.config.ignoreStrings.description%",
+            "scope": "resource"
           },
-          "scope": "resource"
+          "compareFolders.fileParsingRules": {
+            "type": "array",
+            "default": [],
+            "description": "%ext.config.fileParsingRules.description%",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "%ext.config.fileParsingRules.pattern.description%"
+                },
+                "command": {
+                  "type": "string",
+                  "description": "%ext.config.fileParsingRules.command.description%"
+                },
+                "args": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "%ext.config.fileParsingRules.args.description%"
+                },
+                "workingDirectory": {
+                  "type": "string",
+                  "description": "%ext.config.fileParsingRules.workingDirectory.description%"
+                },
+                "timeout": {
+                  "type": "number",
+                  "default": 30000,
+                  "description": "%ext.config.fileParsingRules.timeout.description%"
+                },
+                "env": {
+                  "type": "object",
+                  "description": "%ext.config.fileParsingRules.env.description%",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "pattern",
+                "command",
+                "args"
+              ]
+            },
+            "scope": "resource"
+          }
+        }
+      },
+      {
+        "title": "AsPycharm: Debug panel",
+        "properties": {
+          "aspycharm.debug.showPanelOnBreakpoint": {
+            "type": "boolean",
+            "default": true,
+            "description": "Bring the PyCharm-style Debug panel forward when the program stops (breakpoint, step, exception)."
+          },
+          "aspycharm.debug.groupAttributes": {
+            "type": "boolean",
+            "default": true,
+            "description": "In Python debugging, group an object's protected (_x), special (__x__) and function members under their own nodes, as PyCharm does (debugpy 'variablePresentation'; a launch configuration that sets it wins)."
+          }
         }
       }
-    },
+    ],
     "menus": {
       "commandPalette": [
         {
@@ -326,6 +344,14 @@
         {
           "command": "charmrun.treeItemActivated",
           "when": "false"
+        },
+        {
+          "command": "aspycharm.debug.frameUp",
+          "when": "inDebugMode"
+        },
+        {
+          "command": "aspycharm.debug.frameDown",
+          "when": "inDebugMode"
         }
       ],
       "view/title": [
@@ -463,6 +489,18 @@
         "command": "pycharm-like-snippets.printExpression",
         "key": "alt+p",
         "when": "editorTextFocus && !editorReadonly && editorLangId == python"
+      },
+      {
+        "command": "aspycharm.debug.frameUp",
+        "key": "ctrl+alt+up",
+        "mac": "cmd+alt+up",
+        "when": "inDebugMode && debugState == 'stopped'"
+      },
+      {
+        "command": "aspycharm.debug.frameDown",
+        "key": "ctrl+alt+down",
+        "mac": "cmd+alt+down",
+        "when": "inDebugMode && debugState == 'stopped'"
       }
     ],
     "commands": [
@@ -651,6 +689,21 @@
         "command": "charmrun.treeItemActivated",
         "title": "Open Run Configuration",
         "category": "CharmRun"
+      },
+      {
+        "command": "aspycharm.debug.showPanel",
+        "title": "Show PyCharm-style Debug Panel",
+        "category": "AsPycharm"
+      },
+      {
+        "command": "aspycharm.debug.frameUp",
+        "title": "Debug: Previous Frame (Up the Call Stack)",
+        "category": "AsPycharm"
+      },
+      {
+        "command": "aspycharm.debug.frameDown",
+        "title": "Debug: Next Frame (Down the Call Stack)",
+        "category": "AsPycharm"
       }
     ],
     "viewsContainers": {
@@ -664,6 +717,13 @@
           "id": "charmrun-explorer",
           "title": "CharmRun",
           "icon": "resources/charmrun/icon.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "aspycharmDebug",
+          "title": "Debug",
+          "icon": "resources/debugPanel/debug.svg"
         }
       ]
     },
@@ -693,6 +753,13 @@
           "name": "Run Configurations",
           "icon": "resources/charmrun/icon.svg",
           "contextualTitle": "Python Run Configurations"
+        }
+      ],
+      "aspycharmDebug": [
+        {
+          "type": "webview",
+          "id": "aspycharm.debugPanel",
+          "name": "Debug"
         }
       ]
     },
