@@ -210,8 +210,59 @@ D:\VSCodeAsPycharm\install.cmd
   `rufat.py-doc-links`), installs
   `dist\vscodeaspycharm-*.vsix`, and checks that VS Code lists it. Then reload the VS Code windows.
 - **Update:** `D:\VSCodeAsPycharm\install.cmd -Pull` (git pull, then reinstall).
-- **No Forgejo access** (e.g. the laptop away from home): copy `dist\vscodeaspycharm-*.vsix` over and run
-  `install.ps1 -Vsix <path>`, or VS Code > Extensions > `...` > Install from VSIX.
+- **No Forgejo access** (e.g. the laptop away from home): install from GitHub, below.
+
+## Install from GitHub (a download link, from anywhere)
+
+Every version is attached to a GitHub Release of
+[popescu-catalin-ionut/VSCodeAsPycharm](https://github.com/popescu-catalin-ionut/VSCodeAsPycharm/releases).
+It is not in VS Code's Extensions search; you install the file yourself.
+
+**Newest version, always this link:**
+<https://github.com/popescu-catalin-ionut/VSCodeAsPycharm/releases/latest/download/vscodeaspycharm.vsix>
+
+**In VS Code (no command line):**
+
+1. Open the link above; the browser downloads `vscodeaspycharm.vsix`.
+2. In VS Code: **Extensions** view (Ctrl+Shift+X) > **`...`** (top right of the view) > **Install from VSIX...** >
+   pick the downloaded file.
+3. **Reload** when VS Code asks (or Ctrl+Shift+P > *Developer: Reload Window*).
+
+**In PowerShell (downloads and installs in one go):**
+
+```powershell
+$vsix = "$env:TEMP\vscodeaspycharm.vsix"
+Invoke-WebRequest https://github.com/popescu-catalin-ionut/VSCodeAsPycharm/releases/latest/download/vscodeaspycharm.vsix -OutFile $vsix -UseBasicParsing
+code --install-extension $vsix --force
+```
+
+- **A specific version:** pick it on the [Releases page](https://github.com/popescu-catalin-ionut/VSCodeAsPycharm/releases);
+  each release also has the file with its version in the name (`vscodeaspycharm-2.2.1.vsix`).
+- **Updating:** the same steps again; the newer version replaces the installed one.
+- **First install on a machine** that has the original extensions this one replaces: remove them, or their commands
+  clash with ours (the clone's `install.cmd` does this for you):
+
+  ```powershell
+  'moshfeu.compare-folders','linda-cheung.content-menu-item-refresh','tumuerzunong.pycharm-like-snippets','yingbo.charmrun','rufat.py-doc-links' |
+    ForEach-Object { code --uninstall-extension $_ }
+  ```
+- `code` is VS Code's command line; if PowerShell does not know it, open a new window after installing VS Code, or use
+  the steps "In VS Code" above.
+
+### Publishing a new version to GitHub
+
+After a change is built (`build.ps1 -Test`), committed and pushed, attach the VSIX to a release. The second file,
+always named `vscodeaspycharm.vsix`, is what the "newest version" link downloads:
+
+```powershell
+$v = (Get-Content package.json -Raw | ConvertFrom-Json).version
+Copy-Item "dist\vscodeaspycharm-$v.vsix" "$env:TEMP\vscodeaspycharm.vsix" -Force
+gh release create "v$v" "dist\vscodeaspycharm-$v.vsix" "$env:TEMP\vscodeaspycharm.vsix" `
+  --repo popescu-catalin-ionut/VSCodeAsPycharm --title "AsPycharm $v" --notes "See README.md."
+```
+
+GitHub Actions is turned off for this repository: the Compare Folders workflows that came with upstream would
+otherwise try (and fail) to publish to the Marketplace whenever a release is created.
 
 ## Build after a change
 
