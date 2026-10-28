@@ -1,7 +1,8 @@
 # AsPycharm
 
 One VS Code extension, our own build, from our Forgejo: `http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm`.
-It merges four extensions, each reviewed line by line (the first two on 2026-10-27, the others on 2026-10-28):
+It merges five extensions and plugins, each reviewed line by line (the first two on 2026-10-27, the others on
+2026-10-28):
 
 | Part | From | What it adds |
 |---|---|---|
@@ -9,6 +10,7 @@ It merges four extensions, each reviewed line by line (the first two on 2026-10-
 | **Refresh Explorer** | [LLLLinda/vscode-extension-refresh](https://github.com/LLLLinda/vscode-extension-refresh) | "Refresh Explorer" in the Explorer's right-click menu (one menu entry in `package.json`, no code) |
 | **PyCharm-like snippets** | [un4gt/pycharm-like-snippets](https://github.com/un4gt/pycharm-like-snippets) v0.1.0 (MIT, licence in `snippets/`), ported at commit `505c2d1` | 32 PyCharm-style Python snippets and **Alt+P** to wrap a line in `print(...)` |
 | **CharmRun** | [yingbo/charmrun](https://github.com/yingbo/charmrun) v1.6.1 (MIT, licence in `resources/charmrun/`), ported at commit `2327ba4` into `src/charmrun/` | PyCharm-style Python run configurations: a sidebar, a form editor, Run / Debug buttons, before-launch steps |
+| **Python Doc Links** | [rufatpro/plugins `jetbrains/py-doc-links`](https://github.com/rufatpro/plugins/tree/main/jetbrains/py-doc-links) 0.2.10 (MIT, licence in `resources/pyDocLinks/`), a JetBrains plugin rewritten in TypeScript from commit `bae1de9` into `src/pyDocLinks/` | **Ctrl+Click** on `file.py` and Sphinx references (`:py:func:`, `:class:`, ...) in docstrings and comments |
 
 Our changes on top of upstream: the extension ID is `catalinpop.aspycharm` (so the Marketplace never auto-updates it
 over our build), the Refresh Explorer menu entry, and these fixes (each with a test that fails on upstream's code):
@@ -93,6 +95,57 @@ Not taken: their build setup (esbuild, eslint), screenshot script, publishing wo
 `AGENTS.md` (which tell coding agents to hide their involvement). New dependency: `jsonc-parser` 3.3.1 (Microsoft,
 MIT, no dependencies, no install scripts), the parser VS Code itself uses for `launch.json`.
 
+### Python Doc Links: Ctrl+Click in docstrings and comments
+
+In a Python file, **Ctrl+Click** (or F12, *Go to Definition*) on a reference inside a docstring, any other string, or
+a `#` comment. References in code are left to the Python extension.
+
+```python
+def example():
+    """
+    File: submodule.py                     (also a path: pkg/a/main.py, ../tools/x.py)
+    Function: :py:func:`submodule.process_submodule_data`
+    Filename form: :py:func:`submodule.py.process_submodule_data`
+    Current module: :func:`run_main_flow`
+    Variable: :py:data:`config.hosters_data`
+    Class: :py:class:`ObjectWithProperties`
+    Method: :meth:`shapes.Circle.area`     (or :meth:`Circle.area` in the current file)
+    Module: :py:mod:`submodule`, :mod:`pkg.util`, :py:mod:`submodule.py`
+    Sphinx forms: :func:`~pkg.util.helper`, :func:`the helper <pkg.util.helper>`, :func:`helper()`
+    """
+    # see submodule.py
+```
+
+| Reference | Goes to |
+|---|---|
+| `file.py`, `pkg/file.py` | the file: next to the current file first, else in the workspace |
+| `:py:func:` / `:func:` | `def` (falls back to `class`, then a variable) |
+| `:py:meth:` / `:meth:` | `def` inside the class (`module.Class.method` or `Class.method`) |
+| `:py:class:` / `:class:` / `:exc:` | `class` |
+| `:py:data:` / `:data:` | module-level variable |
+| `:py:attr:` / `:attr:` | class attribute, or `self.name = ...` in the class |
+| `:py:mod:` / `:mod:` | `module.py`, or the package's `__init__.py` |
+| `:obj:` | any of the above |
+
+A one-part name (<code>:func:`run`</code>) is looked up in the current file. `pkg.module.func` is looked up as `func` in
+`pkg/module.py`; when several files share a name (many `main.py`), the one in the named folders, then the one next to
+the current file, wins, and copies under `docs/`, `examples/` or `!to_tg/` come last. If the module is found but not
+the name, the module opens at the top. Folders like `.venv`, `node_modules` and `__pycache__` are not searched.
+
+Compared with the JetBrains plugin (each checked against its own patterns and rules, each with a test in
+`src/test/suite/pyDocLinks.test.ts`):
+
+- Added Sphinx roles and forms it did not match: `:mod:`, `:meth:`, `:exc:`, `:obj:`, `title <target>`, `~target`,
+  `target()`.
+- `shapes.Circle.area` is `area` inside class `Circle` in `shapes.py`; the plugin looked for a file `Circle.py`.
+- A variable resolves to the module-level assignment, not the first local one inside a function; `LIMIT == 3` is
+  no longer taken for an assignment; `def run(` written inside a docstring is not taken for the definition.
+- `pkg/a/main.py` keeps its folders; the plugin matched only `main.py`, so any `main.py` could win.
+
+Not taken: the Kotlin/Gradle build (rewritten for VS Code; the Gradle wrapper jar was checked against Gradle's
+published checksums and is genuine) and the author's separate VS Code version (`rufat.py-doc-links`, which links
+inside code too); `install.cmd` removes that one if installed, so links do not appear twice.
+
 ## Install on a machine (no Node needed)
 
 The built extension is committed in `dist\`. On any Windows machine with VS Code and access to Forgejo:
@@ -103,7 +156,8 @@ D:\VSCodeAsPycharm\install.cmd
 ```
 
 - `install.cmd` (or `install.ps1`) uninstalls the extensions it replaces if present (`moshfeu.compare-folders`,
-  `linda-cheung.content-menu-item-refresh`, `tumuerzunong.pycharm-like-snippets`, `yingbo.charmrun`), installs
+  `linda-cheung.content-menu-item-refresh`, `tumuerzunong.pycharm-like-snippets`, `yingbo.charmrun`,
+  `rufat.py-doc-links`), installs
   `dist\vscodeaspycharm-*.vsix`, and checks that VS Code lists it. Then reload the VS Code windows.
 - **Update:** `D:\VSCodeAsPycharm\install.cmd -Pull` (git pull, then reinstall).
 - **No Forgejo access** (e.g. the laptop away from home): copy `dist\vscodeaspycharm-*.vsix` over and run

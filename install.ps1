@@ -4,9 +4,9 @@
 
 .DESCRIPTION
   - Finds VS Code's command line (code.cmd) on PATH or in the usual install folders.
-  - Uninstalls the four extensions AsPycharm replaces, if present: moshfeu.compare-folders,
-    linda-cheung.content-menu-item-refresh, tumuerzunong.pycharm-like-snippets and yingbo.charmrun. Their commands,
-    views, snippets and Alt+P would clash with AsPycharm's.
+  - Uninstalls the five extensions AsPycharm replaces, if present: moshfeu.compare-folders,
+    linda-cheung.content-menu-item-refresh, tumuerzunong.pycharm-like-snippets, yingbo.charmrun and
+    rufat.py-doc-links. Their commands, views, snippets, Alt+P and docstring links would clash with AsPycharm's.
   - Installs the VSIX (--force, so re-running it updates or reinstalls).
 
 .PARAMETER Vsix
@@ -22,7 +22,7 @@ param([string]$Vsix, [switch]$Pull)
 $ErrorActionPreference = 'Stop'
 
 $replaced = @('moshfeu.compare-folders', 'linda-cheung.content-menu-item-refresh', 'tumuerzunong.pycharm-like-snippets',
-  'yingbo.charmrun')
+  'yingbo.charmrun', 'rufat.py-doc-links')
 $id = 'catalinpop.aspycharm'
 
 if ($Pull) {

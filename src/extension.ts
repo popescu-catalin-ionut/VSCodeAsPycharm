@@ -13,6 +13,7 @@ import { configurationContext } from './context/configuration';
 import { createTreeViewWithProvider } from './utils/createTreeViewWithProvider';
 import { registerPrintExpression } from './services/printExpression';
 import { activateCharmRun } from './charmrun/activate';
+import { registerPyDocLinks } from './pyDocLinks/provider';
 
 export async function activate(context: ExtensionContext) {
   // PyCharm-style run configurations (from yingbo/charmrun); first, so an early return below cannot skip it.
@@ -55,6 +56,7 @@ export async function activate(context: ExtensionContext) {
       commands.registerCommand(PICK_FROM_RECENT_COMPARES, pickFromRecents),
       commands.registerCommand(CLEAR_RECENT_COMPARES, globalState.clear),
       registerPrintExpression(),
+      registerPyDocLinks(),
   );
   const {folderLeft, folderRight} = getConfiguration('folderLeft', 'folderRight', 'ignoreExtension');
   if (folderLeft || folderRight)
