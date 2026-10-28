@@ -57,9 +57,8 @@ export async function parseFile(filePath: string): Promise<ParsedFileResult> {
 }
 
 async function executeParsingCommand(filePath: string, rule: FileParsingRule): Promise<string> {
-  const args = rule.args.map(arg =>
-    arg.replace('{file}', filePath)
-  );
+  // split/join, not replace(): replaces every {file}, and "$&" / "$$" in the path stay literal.
+  const args = rule.args.map(arg => arg.split('{file}').join(filePath));
 
   const workingDirectory = rule.workingDirectory || process.cwd();
   const timeout = rule.timeout || PARSING_RULE_EXECUTION_TIMEOUT;

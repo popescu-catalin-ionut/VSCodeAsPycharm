@@ -3,6 +3,7 @@ import os from 'os';
 import * as logger from '../services/logger';
 import { globalState } from '../services/globalState';
 import { getConfiguration } from '../services/configuration';
+import { ISSUES_AUTHORITY, ISSUES_NEW_PATH } from './consts';
 
 export function showInfoMessageWithTimeout(message: string, timeout: number = 3000) {
   const upTo = timeout / 10;
@@ -41,7 +42,19 @@ export async function showErrorMessage(message: string, error: any) {
   const report = l10n.t('Report');
   if ((await window.showErrorMessage(message, report)) === report) {
     try {
-      const body = `**Original message**: ${message}
+      env.openExternal(buildIssueUri(message, error));
+    } catch (error) {
+      logger.log(error);
+    }
+  }
+}
+
+// A "new issue" link on our Forgejo, with the error as title and body.
+// VS Code opens external links as encodeURI(uri.toString(true)): the query is decoded and then only lightly
+// re-encoded, so "&", "#" and "+" in the text would cut or garble it. They are swapped for look-alikes.
+export function buildIssueUri(message: string, error: any): Uri {
+  const safe = (text: string) => text.replace(/&/g, '＆').replace(/#/g, '＃').replace(/\+/g, '＋');
+  const body = `**Original message**: ${message}
 
 **System Info**
 Editor version: ${version}
@@ -49,17 +62,14 @@ Extension version: ${globalState.extensionVersion}
 OS: ${os.platform()} ${os.release()}
 
 **Stack**
-${error.stack || error.message || error}
+${error?.stack || error?.message || error}
 `;
-      const url = `https://github.com/moshfeu/vscode-compare-folders/issues/new?title=[error] ${error.message || error
-        }&body=${body}`;
-
-      const uri = Uri.parse(url);
-      env.openExternal(uri);
-    } catch (error) {
-      logger.log(error);
-    }
-  }
+  return Uri.from({
+    scheme: 'http',
+    authority: ISSUES_AUTHORITY,
+    path: ISSUES_NEW_PATH,
+    query: `title=${safe(`[error] ${error?.message || error}`)}&body=${safe(body)}`,
+  });
 }
 
 export async function showErrorMessageWithMoreInfo(message: string, link: string) {

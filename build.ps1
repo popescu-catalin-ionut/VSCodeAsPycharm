@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Builds dist\aspycharm-<version>.vsix from source. Only needed after a code change.
+  Builds dist\vscodeaspycharm-<version>.vsix from source. Only needed after a code change.
 
 .DESCRIPTION
   Uses a portable Node in .tools\ (downloaded once, SHA-256 checked against nodejs.org). Nothing is
@@ -71,7 +71,7 @@ try {
   $dist = Join-Path $root 'dist'
   New-Item -ItemType Directory -Force $dist | Out-Null
   Get-ChildItem $dist -Filter '*.vsix' | Remove-Item
-  $out = Join-Path $dist "aspycharm-$version.vsix"
+  $out = Join-Path $dist "vscodeaspycharm-$version.vsix"
   # README's relative links resolve against our Forgejo (vsce only auto-detects GitHub / GitLab).
   $repo = 'http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm'
   Invoke-Checked 'npx.cmd' @('--yes', "@vscode/vsce@$vsceVersion", 'package', '--yarn', '-o', $out,

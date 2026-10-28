@@ -19,7 +19,9 @@ class MockWorkspaceConfiguration implements WorkspaceConfiguration {
     return undefined;
   }
 
-  update(_section: string, _value: unknown): Thenable<void> {
+  // Kept in the shared values object, so the next getConfiguration() sees it.
+  update(section: string, value: unknown): Thenable<void> {
+    (this._values as Record<string, unknown>)[section] = value;
     return Promise.resolve();
   }
 }

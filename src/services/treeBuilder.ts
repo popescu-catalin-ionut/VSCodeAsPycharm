@@ -1,6 +1,4 @@
 import { TreeItemCollapsibleState, Uri } from 'vscode';
-import set from 'lodash/set';
-import get from 'lodash/get';
 import { COMPARE_FILES } from '../constants/commands';
 import { File } from '../models/file';
 import * as path from 'path';
@@ -15,6 +13,12 @@ export type TreeNode = {
   [key: string]: TreeNode | [[string, string], string] | string;
 };
 
+// Folders keep their children in a Map, apart from their own fields, so no file or folder name can clash with
+// them: names like "path", "constructor", "toString" or "__proto__" used to lose files or crash the tree
+// (the old lodash set/get skipped or followed those keys).
+type FolderNode = { kind: 'folder'; path: string; relativePath: string; children: Map<string, FolderNode | FileNode> };
+type FileNode = { kind: 'file'; paths: DiffPaths; relativePath: string };
+
 export function build(paths: DiffPathss | ViewOnlyPaths, basePath: string) {
   if (uiContext.diffViewMode === 'list') {
     return {
@@ -23,32 +27,34 @@ export function build(paths: DiffPathss | ViewOnlyPaths, basePath: string) {
     }
   }
 
-  const tree = {} as TreeNode;
+  const root: FolderNode = { kind: 'folder', path: basePath, relativePath: '', children: new Map() };
   try {
     paths.forEach((filePath) => {
       const relativePath = path.relative(basePath, filePath[0]);
       const segments = relativePath.split(path.sep);
-      const fileSegment = segments.pop()!;
-
-      segments.reduce((prev, current) => {
-        prev.push(current);
-        if (!get(tree, prev)) {
-          set(tree, prev, {
-            path: path.join(basePath, ...prev),
-            relativePath: path.join(...prev),
-          });
+      const fileName = segments.pop()!;
+      const walked: string[] = [];
+      let folder = root;
+      for (const segment of segments) {
+        walked.push(segment);
+        let next = folder.children.get(segment);
+        if (next?.kind !== 'folder') {
+          next = {
+            kind: 'folder',
+            path: path.join(basePath, ...walked),
+            relativePath: path.join(...walked),
+            children: new Map(),
+          };
+          folder.children.set(segment, next);
         }
-        return prev;
-      }, [] as Array<string>);
-
-      set(tree, [...segments, fileSegment], [filePath, relativePath]);
+        folder = next;
+      }
+      folder.children.set(fileName, { kind: 'file', paths: filePath as DiffPaths, relativePath });
     });
   } catch (error) {
     log(`can't build the tree: ${error}`);
-  } finally {
-    const treeItems = createHierarchy(tree);
-    return { tree, treeItems };
   }
+  return { tree: toPlainTree(root), treeItems: createHierarchy(root) };
 }
 
 function createList(paths: DiffPathss | ViewOnlyPaths, basePath: string): File[] {
@@ -76,43 +82,44 @@ function createList(paths: DiffPathss | ViewOnlyPaths, basePath: string): File[]
   }
 }
 
-function createHierarchy(src: TreeNode): File[] {
-  const children = (Object.entries(src) as Array<[string, TreeNode]>).reduce(
-    (prev, [key, childrenOrFileData]) => {
-      if (childrenOrFileData.path) {
-        const { path, relativePath, ...children } = childrenOrFileData;
+function createHierarchy(folder: FolderNode): File[] {
+  return [...folder.children].map(([name, node]) => {
+    if (node.kind === 'folder') {
+      return new File({
+        label: name,
+        type: 'folder',
+        collapsibleState: TreeItemCollapsibleState.Collapsed,
+        children: createHierarchy(node),
+        resourceUri: Uri.file(node.path),
+        relativePath: node.relativePath,
+      });
+    }
+    return new File({
+      label: name,
+      type: hasParsableContent(node.paths[0], node.paths[1]) ? 'file-parsable' : 'file',
+      collapsibleState: TreeItemCollapsibleState.None,
+      command: {
+        title: name,
+        command: COMPARE_FILES,
+        arguments: [node.paths, node.relativePath],
+      },
+      resourceUri: Uri.file(node.paths[0]),
+      relativePath: node.relativePath,
+    });
+  });
+}
 
-        prev.push(
-          new File({
-            label: key,
-            type: 'folder',
-            collapsibleState: TreeItemCollapsibleState.Collapsed,
-            children: createHierarchy(children as TreeNode),
-            resourceUri: Uri.file(path),
-            relativePath,
-          })
-        );
-      } else {
-        const [paths, relativePath] = (childrenOrFileData as unknown) as [DiffPaths, string];
-        prev.push(
-          new File({
-            label: key,
-            type: hasParsableContent(paths[0], paths[1]) ? 'file-parsable' : 'file',
-            collapsibleState: TreeItemCollapsibleState.None,
-            command: {
-              title: key,
-              command: COMPARE_FILES,
-              arguments: [paths, relativePath],
-            },
-            resourceUri: Uri.file(paths[0]),
-            relativePath,
-          })
-        );
-      }
-      return prev;
-    },
-    [] as File[]
-  );
-
-  return children;
+// The tree as a plain object, in the shape build() always returned (used by tests and for debugging).
+function toPlainTree(folder: FolderNode): TreeNode {
+  const plain = {} as TreeNode;
+  if (folder.relativePath) {
+    plain.path = folder.path;
+    plain.relativePath = folder.relativePath;
+  }
+  for (const [name, node] of folder.children) {
+    const value = node.kind === 'folder' ? toPlainTree(node) : [node.paths, node.relativePath];
+    // defineProperty: plain assignment to "__proto__" would change the prototype instead of adding a key.
+    Object.defineProperty(plain, name, { value, enumerable: true, writable: true, configurable: true });
+  }
+  return plain;
 }

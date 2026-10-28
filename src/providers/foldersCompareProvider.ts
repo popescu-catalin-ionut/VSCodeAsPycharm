@@ -74,13 +74,14 @@ export class CompareFoldersProvider extends BaseViewProvider {
   };
 
   dismissDifference = async (e: TreeItem) => {
-    const { path } = e.resourceUri || {};
+    // fsPath, not path: on Windows Uri.path is "/c:/x/a.txt" and never matched the "C:\x\a.txt" diff paths.
+    const fsPath = e.resourceUri?.fsPath;
 
-    if (!path) {
+    if (!fsPath) {
       return;
     }
 
-    this.ignoreDifferencesList.add(path);
+    this.ignoreDifferencesList.add(samePathKey(fsPath));
     this.filterIgnoredFromDiffs();
     await this.updateUI();
   }
@@ -237,8 +238,8 @@ export class CompareFoldersProvider extends BaseViewProvider {
         const path1 = diff[0];
         const path2 = diff[1];
 
-        return !this.ignoreDifferencesList.has(path1) &&
-          !this.ignoreDifferencesList.has(path2);
+        return !this.ignoreDifferencesList.has(samePathKey(path1)) &&
+          !this.ignoreDifferencesList.has(samePathKey(path2));
       });
   }
 
@@ -365,6 +366,9 @@ export class CompareFoldersProvider extends BaseViewProvider {
     }
   }
 }
+
+// The same file always gives the same key (VS Code also lower-cases the Windows drive letter in fsPath).
+const samePathKey = (filePath: string) => Uri.file(filePath).fsPath;
 
 const openFolderChild = (isSingle: boolean) =>
   new File({

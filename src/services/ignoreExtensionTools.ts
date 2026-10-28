@@ -50,8 +50,10 @@ export function validate(): boolean {
   return true;
 }
 
+// Replaces the extension at the end of the name (not its first occurrence: "a.php.php" -> "a.php.$ext0").
 function identityExtension(name: string, id: number) {
-  return path.basename(name).replace(path.extname(name), `.$ext${id}`);
+  const base = path.basename(name);
+  return `${base.slice(0, base.length - path.extname(base).length)}.$ext${id}`;
 }
 
 function strcmp(str1: string, str2: string) {

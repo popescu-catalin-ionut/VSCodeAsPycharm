@@ -1,8 +1,8 @@
 {
   "name": "aspycharm",
   "displayName": "AsPycharm",
-  "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu, as one extension.",
-  "version": "1.0.0",
+  "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun), as one extension.",
+  "version": "1.2.0",
   "repository": {
     "type": "git",
     "url": "http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm"
@@ -11,7 +11,12 @@
     "compare",
     "compare folders",
     "diff",
-    "diff folders"
+    "diff folders",
+    "python",
+    "snippets",
+    "pycharm",
+    "run configuration",
+    "launch.json"
   ],
   "icon": "resources/icon.png",
   "galleryBanner": {
@@ -29,11 +34,19 @@
     "node": ">=20.0.0"
   },
   "categories": [
+    "Snippets",
+    "Debuggers",
     "Other"
   ],
   "activationEvents": [
     "onStartupFinished"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Runs commands from launch.json and settings (run configurations, before-launch steps, file parsing rules)."
+    }
+  },
   "main": "./out/extension.js",
   "l10n": "./l10n",
   "contributes": {
@@ -253,6 +266,10 @@
     "menus": {
       "commandPalette": [
         {
+          "command": "pycharm-like-snippets.printExpression",
+          "when": "editorLangId == python && !editorReadonly"
+        },
+        {
           "command": "foldersCompare.refresh",
           "when": "false"
         },
@@ -295,6 +312,18 @@
         {
           "command": "foldersCompare.excludeFromComparison",
           "when": "false"
+        },
+        {
+          "command": "charmrun.runConfigFromTree",
+          "when": "false"
+        },
+        {
+          "command": "charmrun.debugConfigFromTree",
+          "when": "false"
+        },
+        {
+          "command": "charmrun.treeItemActivated",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -322,6 +351,21 @@
           "command": "foldersCompare.pickFromRecentCompares",
           "group": "navigation@4",
           "when": "view == foldersCompareAppService"
+        },
+        {
+          "command": "charmrun.openConfigurationFlow",
+          "when": "view == charmrun.configurationsView",
+          "group": "navigation"
+        },
+        {
+          "command": "charmrun.refreshConfigurations",
+          "when": "view == charmrun.configurationsView",
+          "group": "navigation"
+        },
+        {
+          "command": "charmrun.adoptLaunchConfiguration",
+          "when": "view == charmrun.configurationsView",
+          "group": "navigation@9"
         }
       ],
       "explorer/context": [
@@ -378,10 +422,53 @@
         {
           "command": "foldersCompare.excludeFromComparison",
           "when": "view =~ /^foldersCompareAppService/ && (viewItem == file || viewItem == file-parsable || viewItem == folder)"
+        },
+        {
+          "command": "charmrun.runConfigFromTree",
+          "when": "view == charmrun.configurationsView && viewItem == runConfiguration",
+          "group": "inline@1"
+        },
+        {
+          "command": "charmrun.debugConfigFromTree",
+          "when": "view == charmrun.configurationsView && viewItem == runConfiguration",
+          "group": "inline@2"
+        },
+        {
+          "command": "charmrun.editConfiguration",
+          "when": "view == charmrun.configurationsView && viewItem == runConfiguration",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "charmrun.duplicateConfiguration",
+          "when": "view == charmrun.configurationsView && viewItem == runConfiguration",
+          "group": "1_actions@2"
+        },
+        {
+          "command": "charmrun.deleteConfiguration",
+          "when": "view == charmrun.configurationsView && viewItem == runConfiguration",
+          "group": "2_destructive@1"
         }
       ]
     },
+    "snippets": [
+      {
+        "language": "python",
+        "path": "./snippets/python.code-snippets"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "pycharm-like-snippets.printExpression",
+        "key": "alt+p",
+        "when": "editorTextFocus && !editorReadonly && editorLangId == python"
+      }
+    ],
     "commands": [
+      {
+        "title": "Wrap Line in print()",
+        "command": "pycharm-like-snippets.printExpression",
+        "category": "AsPycharm"
+      },
       {
         "title": "%ext.command.pickFromRecent.title%",
         "command": "foldersCompare.pickFromRecentCompares",
@@ -477,6 +564,91 @@
         "command": "foldersCompare.compareSelectedFolders",
         "title": "%ext.command.compareSelected.title%",
         "category": "%ext.command.category%"
+      },
+      {
+        "command": "charmrun.runConfiguration",
+        "title": "Run Configuration",
+        "category": "CharmRun",
+        "icon": "$(play)"
+      },
+      {
+        "command": "charmrun.debugConfiguration",
+        "title": "Debug Configuration",
+        "category": "CharmRun",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "charmrun.runCurrentFile",
+        "title": "Run Current Python File",
+        "category": "CharmRun"
+      },
+      {
+        "command": "charmrun.debugCurrentFile",
+        "title": "Debug Current Python File",
+        "category": "CharmRun"
+      },
+      {
+        "command": "charmrun.openConfigurationFlow",
+        "title": "Add Configuration",
+        "category": "CharmRun",
+        "icon": "$(add)"
+      },
+      {
+        "command": "charmrun.createConfiguration",
+        "title": "Create Configuration",
+        "category": "CharmRun",
+        "icon": "$(add)"
+      },
+      {
+        "command": "charmrun.editConfiguration",
+        "title": "Edit Configuration",
+        "category": "CharmRun",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "charmrun.deleteConfiguration",
+        "title": "Delete Configuration",
+        "category": "CharmRun",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "charmrun.duplicateConfiguration",
+        "title": "Duplicate Configuration",
+        "category": "CharmRun",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "charmrun.selectActiveConfig",
+        "title": "Select Active Configuration",
+        "category": "CharmRun"
+      },
+      {
+        "command": "charmrun.adoptLaunchConfiguration",
+        "title": "Adopt launch.json Configuration",
+        "category": "CharmRun"
+      },
+      {
+        "command": "charmrun.refreshConfigurations",
+        "title": "Refresh Configurations",
+        "category": "CharmRun",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "charmrun.runConfigFromTree",
+        "title": "Run",
+        "category": "CharmRun",
+        "icon": "$(play)"
+      },
+      {
+        "command": "charmrun.debugConfigFromTree",
+        "title": "Debug",
+        "category": "CharmRun",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "charmrun.treeItemActivated",
+        "title": "Open Run Configuration",
+        "category": "CharmRun"
       }
     ],
     "viewsContainers": {
@@ -485,6 +657,11 @@
           "id": "foldersCompare",
           "title": "%ext.viewContainer.title%",
           "icon": "$(comparefolders-icon)"
+        },
+        {
+          "id": "charmrun-explorer",
+          "title": "CharmRun",
+          "icon": "resources/charmrun/icon.svg"
         }
       ]
     },
@@ -507,8 +684,22 @@
           "name": "%ext.view.identicals.name%",
           "when": "config.compareFolders.showIdentical"
         }
+      ],
+      "charmrun-explorer": [
+        {
+          "id": "charmrun.configurationsView",
+          "name": "Run Configurations",
+          "icon": "resources/charmrun/icon.svg",
+          "contextualTitle": "Python Run Configurations"
+        }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "charmrun.configurationsView",
+        "contents": "CharmRun stores managed Python run configurations in `.vscode/launch.json`.\n[Add Configuration](command:charmrun.openConfigurationFlow)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
@@ -546,6 +737,7 @@
     "@vscode/l10n": "^0.0.18",
     "dir-compare": "^4.2.0",
     "fs-extra": "8.1.0",
+    "jsonc-parser": "3.3.1",
     "lodash": "^4.18.1",
     "parse-gitignore": "^2.0.0"
   }

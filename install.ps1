@@ -1,11 +1,12 @@
 <#
 .SYNOPSIS
-  Installs AsPycharm into VS Code on this machine from the prebuilt dist\aspycharm-*.vsix (no Node needed).
+  Installs AsPycharm into VS Code on this machine from the prebuilt dist\vscodeaspycharm-*.vsix (no Node needed).
 
 .DESCRIPTION
   - Finds VS Code's command line (code.cmd) on PATH or in the usual install folders.
-  - Uninstalls the two extensions AsPycharm replaces, if present: moshfeu.compare-folders and
-    linda-cheung.content-menu-item-refresh. Their commands and views would clash with AsPycharm's.
+  - Uninstalls the four extensions AsPycharm replaces, if present: moshfeu.compare-folders,
+    linda-cheung.content-menu-item-refresh, tumuerzunong.pycharm-like-snippets and yingbo.charmrun. Their commands,
+    views, snippets and Alt+P would clash with AsPycharm's.
   - Installs the VSIX (--force, so re-running it updates or reinstalls).
 
 .PARAMETER Vsix
@@ -20,7 +21,8 @@
 param([string]$Vsix, [switch]$Pull)
 $ErrorActionPreference = 'Stop'
 
-$replaced = @('moshfeu.compare-folders', 'linda-cheung.content-menu-item-refresh')
+$replaced = @('moshfeu.compare-folders', 'linda-cheung.content-menu-item-refresh', 'tumuerzunong.pycharm-like-snippets',
+  'yingbo.charmrun')
 $id = 'catalinpop.aspycharm'
 
 if ($Pull) {
@@ -29,8 +31,8 @@ if ($Pull) {
 }
 
 if (-not $Vsix) {
-  $found = @(Get-ChildItem (Join-Path $PSScriptRoot 'dist') -Filter 'aspycharm-*.vsix' -ErrorAction SilentlyContinue)
-  if ($found.Count -ne 1) { throw "Expected exactly one dist\aspycharm-*.vsix, found $($found.Count). Run build.ps1 first." }
+  $found = @(Get-ChildItem (Join-Path $PSScriptRoot 'dist') -Filter 'vscodeaspycharm-*.vsix' -ErrorAction SilentlyContinue)
+  if ($found.Count -ne 1) { throw "Expected exactly one dist\vscodeaspycharm-*.vsix, found $($found.Count). Run build.ps1 first." }
   $Vsix = $found[0].FullName
 }
 if (-not (Test-Path $Vsix)) { throw "Not found: $Vsix" }
