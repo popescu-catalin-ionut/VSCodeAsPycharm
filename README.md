@@ -1,6 +1,6 @@
 # AsPycharm
 
-One VS Code extension, our own build, from our Forgejo: `http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm`.
+One VS Code extension, our own build. Source and downloads: <https://github.com/popescu-catalin-ionut/VSCodeAsPycharm>.
 It merges five extensions and plugins, each reviewed line by line (the first two on 2026-10-27, the others on
 2026-10-28):
 
@@ -198,19 +198,23 @@ Tests: `src/test/suite/debugPanel.test.ts`, with a scripted debugger and the pan
 
 ## Install on a machine (no Node needed)
 
-The built extension is committed in `dist\`. On any Windows machine with VS Code and access to Forgejo:
+The built extension is committed in `dist\`. On any Windows machine with VS Code and Git, clone the repository into
+any folder and run its installer from there:
 
 ```powershell
-git clone git@git-local:catalinpop/VSCodeAsPycharm.git D:\VSCodeAsPycharm   # or ssh://git@192.168.3.241:2223/catalinpop/VSCodeAsPycharm.git
-D:\VSCodeAsPycharm\install.cmd
+git clone https://github.com/popescu-catalin-ionut/VSCodeAsPycharm.git
+cd VSCodeAsPycharm
+.\install.cmd
 ```
+
+(From cmd, or by double-clicking `install.cmd` in the cloned folder, works the same.)
 
 - `install.cmd` (or `install.ps1`) uninstalls the extensions it replaces if present (`moshfeu.compare-folders`,
   `linda-cheung.content-menu-item-refresh`, `tumuerzunong.pycharm-like-snippets`, `yingbo.charmrun`,
   `rufat.py-doc-links`), installs
   `dist\vscodeaspycharm-*.vsix`, and checks that VS Code lists it. Then reload the VS Code windows.
-- **Update:** `D:\VSCodeAsPycharm\install.cmd -Pull` (git pull, then reinstall).
-- **No Forgejo access** (e.g. the laptop away from home): install from GitHub, below.
+- **Update:** in the cloned folder, `.\install.cmd -Pull` (git pull, then reinstall).
+- **Without Git** (or without cloning): install from the download link, below.
 
 ## Install from GitHub (a download link, from anywhere)
 

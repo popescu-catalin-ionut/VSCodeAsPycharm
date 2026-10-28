@@ -2,7 +2,7 @@
   "name": "aspycharm",
   "displayName": "AsPycharm",
   "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun) + Ctrl+Click links in Python docstrings and comments (rufatpro py-doc-links) + a PyCharm-style Debug panel, as one extension.",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "repository": {
     "type": "git",
     "url": "http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm"

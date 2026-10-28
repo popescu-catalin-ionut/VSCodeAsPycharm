@@ -16,7 +16,7 @@
   Run "git pull --ff-only" in this checkout first, to install the latest version from Forgejo.
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File D:\VSCodeAsPycharm\install.ps1 -Pull
+  powershell -ExecutionPolicy Bypass -File .\install.ps1 -Pull   # from the cloned folder
 #>
 param([string]$Vsix, [switch]$Pull)
 $ErrorActionPreference = 'Stop'
