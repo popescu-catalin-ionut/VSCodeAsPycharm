@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { applyEdits, modify, parse, ParseError, type FormattingOptions } from 'jsonc-parser';
+import { pinToWorkspace, unpinFromWorkspace } from './launchPaths';
 import {
   RunConfiguration,
   clonePreRunSteps,
@@ -450,7 +451,7 @@ export class ConfigStore implements vscode.Disposable {
         ? entry.name
         : 'Unnamed Configuration',
       runType,
-      script: runType === 'script' ? program : '',
+      script: runType === 'script' ? unpinFromWorkspace(program) : '',
       module: runType === 'module' ? moduleName : '',
       interpreter: typeof entry.python === 'string' && entry.python.trim()
         ? entry.python
@@ -460,7 +461,7 @@ export class ConfigStore implements vscode.Disposable {
         ? entry.cwd
         : '${workspaceFolder}',
       env,
-      envFile: typeof entry.envFile === 'string' ? entry.envFile : '',
+      envFile: typeof entry.envFile === 'string' ? unpinFromWorkspace(entry.envFile) : '',
       terminal: this.fromLaunchConsole(entry.console),
       runMode: this.fromLaunchRunMode(entry),
       preRun: normalizePreRunSteps(entry[CHARMRUN_PRE_RUN_KEY]),
@@ -488,8 +489,9 @@ export class ConfigStore implements vscode.Disposable {
       [CHARMRUN_RUN_MODE_KEY]: config.runMode,
     };
 
+    // Relative paths are saved with ${workspaceFolder}/ so VS Code's own launcher finds them too (launchPaths.ts).
     if (config.runType === 'script') {
-      launchConfig.program = config.script;
+      launchConfig.program = pinToWorkspace(config.script);
     } else {
       launchConfig.module = config.module;
     }
@@ -499,7 +501,7 @@ export class ConfigStore implements vscode.Disposable {
     }
 
     if (config.envFile && config.envFile.trim()) {
-      launchConfig.envFile = config.envFile;
+      launchConfig.envFile = pinToWorkspace(config.envFile);
     }
 
     if (config.preRun.length > 0) {

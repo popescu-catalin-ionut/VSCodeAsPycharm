@@ -10,6 +10,7 @@ import {
   LAUNCH_TOKEN_KEY,
   MANAGED_KEY,
   OUTPUT_FILE_KEY,
+  RUN_ID_KEY,
   SessionMonitor,
   beforeLaunchSucceeded,
   describeError,
@@ -46,6 +47,29 @@ export class Runner implements vscode.Disposable {
       (configId) => this.configStore.findConfigById(configId)?.config.name
     );
     this.sessionMonitor = new SessionMonitor(runOutput);
+  }
+
+  /** Recent launches by run id (newest last), for Rerun. */
+  private launches = new Map<string, { config: RunConfiguration; folder: vscode.WorkspaceFolder; mode: RunMode }>();
+
+  private remember(runId: string, launch: { config: RunConfiguration; folder: vscode.WorkspaceFolder; mode: RunMode }): void {
+    this.launches.set(runId, launch);
+    while (this.launches.size > 50) {
+      this.launches.delete(this.launches.keys().next().value!);
+    }
+  }
+
+  /**
+   * Rerun as PyCharm does: the same configuration (as it was launched, also a temporary one), in the same mode,
+   * through the before-launch steps again, with the script path resolved the same way. False when the run is
+   * not known (e.g. launched before VS Code restarted), so the caller can fall back.
+   */
+  async rerun(runId: string): Promise<boolean> {
+    const launch = this.launches.get(runId);
+    if (!launch) {
+      return false;
+    }
+    return this.execute(launch.config, launch.folder, launch.mode);
   }
 
   async execute(
@@ -106,6 +130,9 @@ export class Runner implements vscode.Disposable {
     if (!debugConfig) {
       return false;
     }
+    const runId = generateId();
+    debugConfig[RUN_ID_KEY] = runId;
+    this.remember(runId, { config: JSON.parse(JSON.stringify(config)), folder, mode });
 
     if (!options.waitForExit) {
       return this.startDebugging(folder, debugConfig, mode);

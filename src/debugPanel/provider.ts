@@ -1,14 +1,44 @@
 // Connects the PyCharm-style Debug panel to VS Code: debug sessions and their protocol messages feed the model;
 // the panel's clicks become debugger requests, editor navigation and VS Code debug commands.
 import {
-  commands, debug, DebugSession, Disposable, ExtensionContext, OverviewRulerLane, Range, ThemeColor, Uri,
-  Webview, WebviewView, WebviewViewProvider, window, workspace,
+  commands, debug, DebugConfiguration, DebugSession, Disposable, ExtensionContext, OverviewRulerLane, Range, TextEditor,
+  TextEditorRevealType, ThemeColor, Uri, Webview, WebviewView, WebviewViewProvider, window, workspace,
 } from 'vscode';
-import { DebugModel, StepAction } from './model';
+import { DebugModel, StepAction, WatchView } from './model';
+import { isUserCode } from './userCode';
 import { getDebugPanelHtml, getNonce } from './html';
 import { registerVariablePresentation } from './presentation';
 
 export const DEBUG_PANEL_VIEW = 'aspycharm.debugPanel';
+
+// Fields the debugger and VS Code add while starting a session; a new start computes them again.
+const INTERNAL_KEYS = ['__configurationTarget', '__sessionId', 'debugAdapterPython', 'debugLauncherPython', 'charmrunLaunchToken'];
+
+/**
+ * How to run a session's program again. Its configuration as it was resolved at the first start: variables like
+ * ${file} are already replaced by the paths used then, so the same script runs, whatever editor is open now.
+ */
+export function planRerun(resolved: DebugConfiguration): { runId?: string; configuration: DebugConfiguration; noDebug: boolean } {
+  const configuration: DebugConfiguration = { ...resolved };
+  for (const key of INTERNAL_KEYS) {
+    delete configuration[key];
+  }
+  const runId = typeof resolved.charmrunRunId === 'string' ? resolved.charmrunRunId : undefined;
+  delete configuration.charmrunRunId;
+  return { runId, configuration, noDebug: resolved.noDebug === true };
+}
+
+/** What Evaluate Expression starts with: the editor's selection, or the dotted name under the cursor. */
+export function expressionAtCursor(editor = window.activeTextEditor): string {
+  if (!editor) {
+    return '';
+  }
+  if (!editor.selection.isEmpty) {
+    return editor.document.getText(editor.selection).trim();
+  }
+  const range = editor.document.getWordRangeAtPosition(editor.selection.active, /[A-Za-z_][\w.]*/);
+  return range ? editor.document.getText(range).replace(/\.+$/, '') : '';
+}
 
 /** PyCharm brings the Debug window forward when the program stops by itself, not after each step you take. */
 export function revealsPanel(reason: string | undefined): boolean {
@@ -19,6 +49,8 @@ const STEP_ACTIONS = new Set<string>(['resume', 'pause', 'stepOver', 'stepInto',
 export class DebugPanelProvider implements WebviewViewProvider, Disposable {
   private view?: WebviewView;
   private breakpointsMuted = false;
+  /** An Evaluate Expression result waiting for the panel's page. */
+  private pendingEvaluated?: WatchView;
   private disposables: Disposable[] = [];
   private postScheduled = false;
   private readonly frameLine = window.createTextEditorDecorationType({
@@ -108,6 +140,7 @@ export class DebugPanelProvider implements WebviewViewProvider, Disposable {
     switch (m?.type) {
       case 'ready':
         this.post();
+        this.postEvaluated(); // an Evaluate Expression made before the panel was first opened
         break;
       case 'selectSession':
         model.selectSession(m.id);
@@ -156,6 +189,26 @@ export class DebugPanelProvider implements WebviewViewProvider, Disposable {
       return;
     }
     switch (action) {
+      case 'stepIntoMyCode':
+        if (id) {
+          await this.stepIntoMyCode(id);
+        }
+        break;
+      case 'runToCursor':
+        await this.runToCursor();
+        break;
+      case 'evaluateExpression':
+        if (id) {
+          this.model.selectSession(id);
+        }
+        await this.evaluateExpression();
+        break;
+      case 'showExecutionPoint':
+        if (id) {
+          this.model.selectSession(id);
+        }
+        await this.showExecutionPoint();
+        break;
       case 'stop':
         await this.stop(id);
         break;
@@ -186,7 +239,11 @@ export class DebugPanelProvider implements WebviewViewProvider, Disposable {
     }
   }
 
-  /** Rerun this tab's configuration: VS Code's restart while it runs, a fresh start once it has ended. */
+  /**
+   * Rerun this tab's program, as PyCharm does: the same script and mode as the first time. Not VS Code's Restart:
+   * that substitutes variables again, so "${file}" became whatever file was open by then (e.g. the module you were
+   * paused in) and the wrong script ran.
+   */
   private async rerun(id: string | undefined): Promise<void> {
     let session = this.debugSession(id);
     // A Python subprocess has its own child session: rerun the program that started it, not the child alone.
@@ -196,14 +253,109 @@ export class DebugPanelProvider implements WebviewViewProvider, Disposable {
     if (!session) {
       return;
     }
-    id = session.id;
-    if (this.model.session(id)?.state !== 'ended' && debug.activeDebugSession?.id === session.id) {
-      await commands.executeCommand('workbench.action.debug.restart');
+    const plan = planRerun(session.configuration);
+    if (this.model.session(session.id)?.state !== 'ended') {
+      await this.stop(session.id);
+    }
+    this.model.closeSession(session.id);
+    // Started by PyCharm-style Run: repeat that run (its before-launch steps too).
+    if (plan.runId) {
+      try {
+        if (await commands.executeCommand<boolean>('charmrun.rerunLaunch', plan.runId)) {
+          return;
+        }
+      } catch {
+        // PyCharm-style Run is not available: start the configuration below instead
+      }
+    }
+    await debug.startDebugging(session.workspaceFolder, plan.configuration, { noDebug: plan.noDebug });
+  }
+
+  /** PyCharm's "Step Into My Code" (Alt+Shift+F7): into the next line of project code, past library code. */
+  async stepIntoMyCode(id: string | undefined = this.model.activeId): Promise<void> {
+    if (!id || this.model.session(id)?.state !== 'stopped') {
+      window.setStatusBarMessage('No program is paused in the debugger', 3000);
       return;
     }
-    await this.stop(id);
-    this.model.closeSession(session.id);
-    await debug.startDebugging(session.workspaceFolder, session.configuration);
+    const roots = (workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath);
+    await this.model.stepIntoMyCode(id, (file) => isUserCode(file, roots));
+  }
+
+  /** PyCharm's "Run to Cursor" (Alt+F9): continue to the line with the cursor in the editor. */
+  async runToCursor(): Promise<void> {
+    if (this.model.session(this.model.activeId)?.state !== 'stopped') {
+      window.setStatusBarMessage('No program is paused in the debugger', 3000);
+      return;
+    }
+    if (!window.activeTextEditor) {
+      window.setStatusBarMessage('Put the cursor on a line in the editor first', 3000);
+      return;
+    }
+    await commands.executeCommand('editor.debug.action.runToCursor');
+  }
+
+  /**
+   * PyCharm's "Evaluate Expression" (Alt+F8): asks for an expression (the selection, or the name under the cursor,
+   * is filled in), evaluates it in the selected frame and shows "result = ..." at the top of the variables.
+   */
+  async evaluateExpression(expression?: string): Promise<WatchView | undefined> {
+    const id = this.model.activeId;
+    if (!id || this.model.session(id)?.state !== 'stopped') {
+      window.setStatusBarMessage('No program is paused in the debugger', 3000);
+      return undefined;
+    }
+    let text = expression;
+    if (text === undefined) {
+      const value = expressionAtCursor();
+      text = await window.showInputBox({
+        title: 'Evaluate Expression',
+        prompt: 'A Python expression, evaluated in the selected frame',
+        value,
+        valueSelection: [0, value.length],
+      });
+    }
+    if (!text?.trim()) {
+      return undefined;
+    }
+    const result = await this.model.evaluate(id, text.trim(), 'watch');
+    this.pendingEvaluated = result;
+    this.reveal();
+    this.postEvaluated();
+    return result;
+  }
+
+  private postEvaluated(): void {
+    if (this.view && this.pendingEvaluated) {
+      void this.view.webview.postMessage({ type: 'showTab', tab: 'variables' });
+      void this.view.webview.postMessage({ type: 'evaluated', result: this.pendingEvaluated });
+      this.pendingEvaluated = undefined;
+    }
+  }
+
+  /**
+   * PyCharm's "Show Execution Point" (Alt+F10): select the frame where the program is paused and bring its line into
+   * view in the editor, with the keyboard there, wherever you have navigated meanwhile.
+   */
+  async showExecutionPoint(): Promise<TextEditor | undefined> {
+    const frame = await this.model.showExecutionPoint();
+    if (!frame) {
+      window.setStatusBarMessage('No program is paused in the debugger', 3000);
+      return undefined;
+    }
+    if (!frame.path) {
+      window.setStatusBarMessage(`The paused line (${frame.name}) has no file to show`, 3000);
+      return undefined;
+    }
+    const at = new Range(Math.max(0, frame.line - 1), Math.max(0, frame.column - 1), Math.max(0, frame.line - 1), Math.max(0, frame.column - 1));
+    try {
+      const editor = await window.showTextDocument(Uri.file(frame.path), { preserveFocus: false, preview: true, selection: at });
+      editor.revealRange(at, TextEditorRevealType.InCenterIfOutsideViewport);
+      this.clearFrameHighlight(); // the top frame: VS Code highlights it itself
+      return editor;
+    } catch {
+      window.setStatusBarMessage(`Cannot open ${frame.path}`, 3000);
+      return undefined;
+    }
   }
 
   /** Frame up/down from anywhere (Ctrl+Alt+Up / Ctrl+Alt+Down). */
@@ -268,6 +420,10 @@ export function registerDebugPanel(context: ExtensionContext): DebugPanelProvide
     commands.registerCommand('aspycharm.debug.frameUp', () => provider.moveFrame(-1)),
     commands.registerCommand('aspycharm.debug.frameDown', () => provider.moveFrame(1)),
     commands.registerCommand('aspycharm.debug.showPanel', () => provider.reveal()),
+    commands.registerCommand('aspycharm.debug.showExecutionPoint', () => provider.showExecutionPoint()),
+    commands.registerCommand('aspycharm.debug.stepIntoMyCode', () => provider.stepIntoMyCode()),
+    commands.registerCommand('aspycharm.debug.runToCursor', () => provider.runToCursor()),
+    commands.registerCommand('aspycharm.debug.evaluateExpression', () => provider.evaluateExpression()),
     registerVariablePresentation(),
   );
   return provider;

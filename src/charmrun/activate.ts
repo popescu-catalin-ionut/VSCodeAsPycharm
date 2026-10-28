@@ -6,6 +6,7 @@ import { StatusBarManager } from './statusBar';
 import { Runner } from './runner';
 import { registerCommands } from './commands';
 import { registerFileRunCommands } from './fileRun';
+import { registerLaunchPathFix } from './launchPaths';
 
 let outputChannel: vscode.OutputChannel | undefined;
 
@@ -24,6 +25,12 @@ export function activateCharmRun(context: vscode.ExtensionContext): void {
 
     registerCommands(context, configStore, treeProvider, editorProvider, statusBar, runner);
     registerFileRunCommands(context, configStore, runner, editorProvider);
+    // Used by the Debug panel's Rerun: repeats a launch by its run id; false when the run is not known.
+    context.subscriptions.push(
+      registerLaunchPathFix(),
+      vscode.commands.registerCommand('charmrun.rerunLaunch', (runId: unknown) =>
+        typeof runId === 'string' ? runner.rerun(runId) : false)
+    );
     outputChannel.appendLine('Commands registered');
 
     const treeView = vscode.window.createTreeView('charmrun.configurationsView', {

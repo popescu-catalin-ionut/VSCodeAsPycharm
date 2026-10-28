@@ -66,6 +66,10 @@ buttons in the sidebar, or the Command Palette (*PyCharm-style Run: Run Configur
 - Configurations are stored in `.vscode/launch.json` as ordinary `debugpy` entries (marked `"charmrunManaged": true`),
   so VS Code's own Run and Debug view can launch them too. Existing Python entries can be **adopted**; entries
   PyCharm-style Run did not create or adopt are never touched. Format: [resources/charmrun/CONFIG_FORMAT.md](resources/charmrun/CONFIG_FORMAT.md).
+- A script or `.env` path typed relative to the project (`scripts/junk.py`) is saved as
+  `${workspaceFolder}/scripts/junk.py`. The editor still shows `scripts/junk.py`. Otherwise VS Code's own launcher
+  (F5, the Run and Debug view) would look for it relative to the working directory, e.g. `scripts/scripts/junk.py`,
+  and fail. Entries saved before 2.4.0 get the same fix when VS Code launches them; saving them again stores it.
 - **Before launch** steps run first, in order: another configuration, an external tool (a command run through the
   shell), or a VS Code task. A failing step stops the launch. Log: *Output > PyCharm-style Run: Before Launch*.
 - **Save console output to a file**, overwritten on every run.
@@ -184,8 +188,14 @@ panel comes forward.
 | **Threads & Variables** | Left: the thread list (`MainThread`, ...) and the stopped thread's frames (`step, car.py:15`); click a frame to open its line and see its variables. Right: the frame's local variables as a tree, PyCharm-style: `odometer = {int} 5`, `self = {Car} <__main__.Car object at ...>`; other scopes (Globals) below. |
 | Evaluate / watches | The box above the tree: **Enter** evaluates in the selected frame and shows `result = ...` at the top; **Ctrl+Shift+Enter** adds a watch (blue, at the top of every stop; × removes it). |
 | **Console** | The program's output (when it writes to the Debug Console: PyCharm-style Run's *Internal console* terminal option, or `"console": "internalConsole"`), and a `>>>` prompt that runs Python in the selected frame. |
-| Toolbar | Rerun, Stop, Resume (F5), Pause, Step Over (F10), Step Into (F11), Step Out (Shift+F11), View Breakpoints, Mute Breakpoints. Steps act on the thread shown in the panel. |
+| Toolbar | Rerun, Stop, Resume (F5), Pause, Show Execution Point (Alt+F10), Step Over (F10), Step Into (F11), Step Into My Code (Alt+Shift+F7), Step Out (Shift+F11), Run to Cursor (Alt+F9), Evaluate Expression (Alt+F8), View Breakpoints, Mute Breakpoints. Steps act on the thread shown in the panel. |
+| Rerun | Runs the same program again, the way it was first started: the same script (also when it was started as "the current file" and you are now in another file), the same Run or Debug mode, and for PyCharm-style Run configurations their before-launch steps again. A new tab replaces the old one. |
+| Step Into My Code | **Alt+Shift+F7**: steps into the next line of *your* code, past library code (the standard library, `site-packages`, virtual environments): it keeps stepping while the program is in such code. It stops early at a breakpoint or an exception, and steps out if a library goes on for more than 300 steps. "Your code" is files in the open folder(s). Plain Step Into goes into library code only when the configuration has `"justMyCode": false`. |
+| Run to Cursor | **Alt+F9**: continues to the line with the cursor in the editor (VS Code's own *Run to Cursor*). |
+| Evaluate Expression | The calculator button or **Alt+F8**: asks for a Python expression (filled in with the selection, or the name under the cursor such as `my_car.speed`), evaluates it in the selected frame, and shows `result = {type} value` at the top of the variables, expandable. |
+| Show Execution Point | The lines button, or **Alt+F10** from anywhere while the program is paused: goes back to the line where it is paused (selects that frame again and puts the editor and keyboard there), after you looked at other frames or files. Also *AsPycharm: Debug: Show Execution Point* in the Command Palette. (Alt+F10 is also VS Code's *Go to Next Comment Thread* in editors with review comments; while a program is paused, it shows the execution point there too.) |
 | Frames from anywhere | **Ctrl+Alt+↑ / Ctrl+Alt+↓** (⌘⌥↑ / ⌘⌥↓ on macOS) move up and down the call stack while stopped, from any editor, as in PyCharm. (While debugging, this replaces VS Code's *Add Cursor Above / Below* on those keys.) |
+| PyCharm's keys and VS Code's | The debug keys above work only while a program is paused, and then win over VS Code's own use of the same key: Alt+F8 (*Go to Next Problem*, *Next Test Message*), Alt+F9 (*Go to Next Comment Thread*, *Next Missed Line* with coverage), Alt+F10 (*Go to Next Comment Thread* in review comments). The rest of the time those keys work as in VS Code. |
 | Protected Attributes | Python objects show their protected (`_x`), special (`__x__`) and function members in groups, as PyCharm does. Setting `aspycharm.debug.groupAttributes` (default on); a launch configuration with its own `variablePresentation` wins. |
 
 Settings: `aspycharm.debug.showPanelOnBreakpoint` (default on) brings the panel forward on every stop. *AsPycharm:

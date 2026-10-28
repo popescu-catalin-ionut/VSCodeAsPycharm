@@ -1,9 +1,13 @@
 import * as assert from 'assert';
-import { commands, extensions } from 'vscode';
+import * as nodeFs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { commands, extensions, Selection, window, workspace } from 'vscode';
 import { DapSession, DebugModel } from '../../debugPanel/model';
 import { getDebugPanelHtml } from '../../debugPanel/html';
 import { PYCHARM_PRESENTATION, withVariablePresentation } from '../../debugPanel/presentation';
-import { DebugPanelProvider, revealsPanel } from '../../debugPanel/provider';
+import { DebugPanelProvider, expressionAtCursor, planRerun, revealsPanel } from '../../debugPanel/provider';
+import { isUserCode } from '../../debugPanel/userCode';
 
 // A scripted debugger: the car.py example from PyCharm's documentation, stopped in Car.step.
 class FakeSession implements DapSession {
@@ -14,12 +18,23 @@ class FakeSession implements DapSession {
   refuse = new Set<string>();
   /** When set, evaluate waits for it (to test what happens meanwhile). */
   evaluateGate?: Promise<void>;
+  /** Where frames say car.py is (a real file when a test opens it). */
+  carPath = '/p/car.py';
   constructor(readonly id = 's1', readonly name = 'car') {}
+
+  /** Scripted stack (instead of car.py's), e.g. to walk through library code. */
+  frames?: () => any[];
+  /** Called on every request, e.g. to answer a step with a "stopped" event. */
+  onRequest?: (command: string, args: any) => void;
 
   async customRequest(command: string, args: any = {}): Promise<any> {
     this.requests.push([command, args]);
     if (this.refuse.has(command)) {
       throw new Error(`${command} refused`);
+    }
+    this.onRequest?.(command, args);
+    if (command === 'stackTrace' && this.frames) {
+      return { stackFrames: this.frames() };
     }
     if (command === 'evaluate' && this.evaluateGate) {
       await this.evaluateGate;
@@ -31,8 +46,8 @@ class FakeSession implements DapSession {
         return args.threadId === 2
           ? { stackFrames: [{ id: 30, name: 'work', line: 3, column: 1, source: { path: '/p/worker.py', name: 'worker.py' } }] }
           : { stackFrames: [
-              { id: 10, name: 'step', line: 15, column: 9, source: { path: '/p/car.py', name: 'car.py' } },
-              { id: 11, name: '<module>', line: 42, column: 1, source: { path: '/p/car.py', name: 'car.py' } },
+              { id: 10, name: 'step', line: 15, column: 9, source: { path: this.carPath, name: 'car.py' } },
+              { id: 11, name: '<module>', line: 42, column: 1, source: { path: this.carPath, name: 'car.py' } },
             ] };
       case 'scopes':
         return { scopes: [
@@ -362,6 +377,86 @@ suite('Debug panel: model', () => {
     assert.strictEqual(revealsPanel('step'), false);
   });
 
+  test('Show Execution Point selects the frame where the program is paused, from any other frame', async () => {
+    const { model } = setup();
+    assert.strictEqual(await model.showExecutionPoint(), undefined, 'nothing paused yet');
+    await model.stopped('s1', 1);
+    await model.selectFrame('s1', 11);
+    const top = await model.showExecutionPoint();
+    assert.deepStrictEqual([top?.name, top?.line], ['step', 15]);
+    assert.strictEqual(model.session('s1')!.frameId, 10);
+    assert.strictEqual(model.session('s1')!.variables[0].name, 'self', 'its variables are shown again');
+    model.continued('s1');
+    assert.strictEqual(await model.showExecutionPoint(), undefined, 'not while running');
+  });
+
+  // A program whose steps go through `files` in turn: each stepIn/stepOut lands in the next one.
+  function walk(files: string[], reasons: Record<number, string> = {}) {
+    const { model, session } = setup();
+    let at = 0;
+    session.frames = () => [{ id: 100 + at, name: 'f', line: 1, column: 1, source: { path: files[at], name: path.basename(files[at]) } }];
+    session.onRequest = (command) => {
+      if (command === 'stepIn' || command === 'stepOut') {
+        at = Math.min(at + 1, files.length - 1);
+        setTimeout(() => void model.stopped('s1', 1, reasons[at] ?? 'step'), 0);
+      }
+    };
+    return { model, session, steps: () => session.requests.filter(([c]) => c === 'stepIn' || c === 'stepOut').map(([c]) => c) };
+  }
+
+  const project = path.join(os.tmpdir(), 'proj');
+  const lib = path.join(os.tmpdir(), 'venv', 'Lib', 'site-packages', 'requests', 'api.py');
+  const mine = (p: string | undefined) => isUserCode(p, [project]);
+
+  test('Step Into My Code steps through library code to the next line of project code', async () => {
+    const { model, steps } = walk([path.join(project, 'main.py'), lib, lib, path.join(project, 'handlers.py')]);
+    await model.stopped('s1', 1, 'breakpoint');
+    await model.stepIntoMyCode('s1', mine);
+    assert.deepStrictEqual(steps(), ['stepIn', 'stepIn', 'stepIn']);
+    assert.strictEqual(model.session('s1')!.frames[0].path, path.join(project, 'handlers.py'));
+  });
+
+  test('Step Into My Code stops at a breakpoint met in library code', async () => {
+    const { model, steps } = walk([path.join(project, 'main.py'), lib, lib, path.join(project, 'x.py')], { 2: 'breakpoint' });
+    await model.stopped('s1', 1, 'breakpoint');
+    await model.stepIntoMyCode('s1', mine);
+    assert.deepStrictEqual(steps(), ['stepIn', 'stepIn']);
+  });
+
+  test('Step Into My Code steps out when library code goes on too long', async () => {
+    const files = [path.join(project, 'main.py'), lib, lib, lib, lib, path.join(project, 'main.py')];
+    const { model, steps } = walk(files);
+    await model.stopped('s1', 1, 'breakpoint');
+    await model.stepIntoMyCode('s1', mine, 2);
+    assert.deepStrictEqual(steps(), ['stepIn', 'stepIn', 'stepOut', 'stepOut', 'stepOut']);
+    assert.ok(mine(model.session('s1')!.frames[0].path));
+  });
+
+  test('Step Into My Code ends when a step is refused or the program ends', async () => {
+    const refused = walk([path.join(project, 'main.py'), lib]);
+    await refused.model.stopped('s1', 1, 'breakpoint');
+    refused.session.refuse.add('stepIn');
+    await refused.model.stepIntoMyCode('s1', mine);
+    assert.strictEqual(refused.session.requests.filter(([c]) => c === 'stepIn').length, 1);
+
+    const { model, session } = setup();
+    await model.stopped('s1', 1, 'breakpoint');
+    session.onRequest = (command) => { if (command === 'stepIn') { setTimeout(() => model.endSession('s1'), 0); } };
+    await model.stepIntoMyCode('s1', () => false); // would loop if the end were not noticed
+    assert.strictEqual(model.session('s1')!.state, 'ended');
+  });
+
+  test('my code: files in the project, not libraries, the standard library or virtual environments', () => {
+    assert.ok(isUserCode(path.join(project, 'app', 'main.py'), [project]));
+    assert.ok(!isUserCode(path.join(os.tmpdir(), 'elsewhere', 'x.py'), [project]), 'outside the project');
+    assert.ok(!isUserCode(path.join(project, '.venv', 'Lib', 'site-packages', 'x.py'), [project]), 'venv inside the project');
+    assert.ok(!isUserCode(path.join(project, 'venv', 'lib', 'python3.12', 'json', '__init__.py'), [project]));
+    assert.ok(!isUserCode('/usr/lib/python3.12/json/__init__.py', []), 'standard library (Linux)');
+    assert.ok(!isUserCode('C:\\Python312\\Lib\\json\\__init__.py', []), 'standard library (Windows)');
+    assert.ok(!isUserCode(undefined, [project]) && !isUserCode('<string>', [project]), 'no file');
+    assert.ok(isUserCode(path.join(os.tmpdir(), 'script.py'), []), 'no folder open: any non-library file');
+  });
+
   test('listeners hear about changes', async () => {
     const { model } = setup();
     let calls = 0;
@@ -502,6 +597,185 @@ suite('Debug panel: page and wiring', () => {
     await provider.handleMessage({ type: 'closeSession', id: 's1' }, webview);
     assert.deepStrictEqual(provider.model.state.sessions, []);
     provider.dispose();
+  });
+
+  test('Show Execution Point opens the paused line in the editor, with the keyboard there', async function () {
+    this.timeout(15000);
+    const dir = nodeFs.mkdtempSync(path.join(os.tmpdir(), 'aspycharm-exec-'));
+    const car = path.join(dir, 'car.py');
+    nodeFs.writeFileSync(car, Array.from({ length: 50 }, (_, i) => `line_${i + 1} = ${i + 1}`).join('\n'));
+    const provider = new DebugPanelProvider();
+    try {
+      assert.strictEqual(await provider.showExecutionPoint(), undefined, 'no program paused: nothing opens');
+      const session = new FakeSession();
+      session.carPath = car;
+      provider.model.addSession(session);
+      await provider.model.stopped('s1', 1);
+      await provider.model.selectFrame('s1', 11); // the user looked at <module>, line 42
+      await window.showTextDocument(await workspace.openTextDocument({ content: 'elsewhere' })); // and went elsewhere
+      const editor = await provider.showExecutionPoint();
+      assert.ok(editor, 'an editor opened');
+      assert.strictEqual(path.normalize(editor!.document.uri.fsPath).toLowerCase(), path.normalize(car).toLowerCase());
+      assert.deepStrictEqual([editor!.selection.active.line, editor!.selection.active.character], [14, 8], 'line 15, column 9');
+      assert.strictEqual(window.activeTextEditor, editor, 'the keyboard is in that editor');
+      assert.strictEqual(provider.model.session('s1')!.frameId, 10, 'the top frame is selected again');
+    } finally {
+      provider.dispose();
+      await commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+      await commands.executeCommand('workbench.action.closeAllEditors');
+      try { nodeFs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }); } catch { /* temp */ }
+    }
+  });
+
+  test('Rerun repeats the program as first started, not with ${file} read again from the open editor (bug)', () => {
+    // What VS Code hands over as a session's configuration: variables already replaced at the first start.
+    const resolved = {
+      type: 'debugpy', request: 'launch', name: 'Python: Current File', program: 'C:\\proj\\main.py', cwd: 'C:\\proj',
+      noDebug: true, __configurationTarget: 5, debugAdapterPython: 'C:\\py\\python.exe', debugLauncherPython: 'C:\\py\\python.exe',
+      charmrunRunId: 'run-1', charmrunLaunchToken: 'tok',
+    };
+    const plan = planRerun(resolved);
+    assert.strictEqual(plan.runId, 'run-1', 'a PyCharm-style Run launch is repeated through its run');
+    assert.strictEqual(plan.noDebug, true, 'Run stays Run, Debug stays Debug');
+    assert.deepStrictEqual(plan.configuration, {
+      type: 'debugpy', request: 'launch', name: 'Python: Current File', program: 'C:\\proj\\main.py', cwd: 'C:\\proj', noDebug: true,
+    }, 'the same script path; internal fields left for the new start to fill in');
+    assert.strictEqual(planRerun({ type: 'node', request: 'launch', name: 'x' }).runId, undefined);
+  });
+
+  test('Evaluate Expression starts with the selection or the dotted name under the cursor', async () => {
+    const editor = await window.showTextDocument(await workspace.openTextDocument({ content: 'total = my_car.speed + 1', language: 'python' }));
+    try {
+      editor.selection = new Selection(0, 17, 0, 17); // inside "speed"
+      assert.strictEqual(expressionAtCursor(editor), 'my_car.speed');
+      editor.selection = new Selection(0, 8, 0, 24);
+      assert.strictEqual(expressionAtCursor(editor), 'my_car.speed + 1');
+      editor.selection = new Selection(0, 6, 0, 6); // on "="
+      assert.strictEqual(expressionAtCursor(editor), '');
+    } finally {
+      await commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+    }
+  });
+
+  test('Evaluate Expression evaluates in the selected frame and puts "result" at the top of the variables', async () => {
+    const provider = new DebugPanelProvider();
+    const original = window.showInputBox;
+    let offered: string | undefined;
+    Object.assign(window, { showInputBox: async (o: { value?: string }) => { offered = o.value; return 'my_car.time'; } });
+    try {
+      assert.strictEqual(await provider.evaluateExpression(), undefined, 'nothing paused: no question asked');
+      assert.strictEqual(offered, undefined);
+      const session = new FakeSession();
+      provider.model.addSession(session);
+      await provider.model.stopped('s1', 1);
+      const result = await provider.evaluateExpression();
+      assert.strictEqual(result?.result?.value, '1');
+      assert.deepStrictEqual(session.requests.filter(([c]) => c === 'evaluate').pop()![1], { expression: 'my_car.time', frameId: 10, context: 'watch' });
+    } finally {
+      Object.assign(window, { showInputBox: original });
+      provider.dispose();
+    }
+  });
+
+  test('Run to Cursor continues to the editor\'s cursor line, only while paused', async () => {
+    const provider = new DebugPanelProvider();
+    const ran: string[] = [];
+    const original = commands.executeCommand;
+    Object.assign(commands, { executeCommand: async (id: string, ...rest: any[]) => { ran.push(id); return id === 'editor.debug.action.runToCursor' ? undefined : original(id, ...rest); } });
+    try {
+      await provider.runToCursor();
+      assert.ok(!ran.includes('editor.debug.action.runToCursor'), 'not while nothing is paused');
+      provider.model.addSession(new FakeSession());
+      await provider.model.stopped('s1', 1);
+      await window.showTextDocument(await workspace.openTextDocument({ content: 'a = 1\nb = 2\n', language: 'python' }));
+      await provider.runToCursor();
+      assert.ok(ran.includes('editor.debug.action.runToCursor'));
+    } finally {
+      Object.assign(commands, { executeCommand: original });
+      await commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+      provider.dispose();
+    }
+  });
+
+  test('page: the toolbar has PyCharm\'s step buttons in order, usable only while paused', async () => {
+    const html = getDebugPanelHtml('vscode-webview:', 'N');
+    const order = [...html.matchAll(/<button class="tool[^"]*" data-action="(\w+)"/g)].map((m) => m[1]);
+    assert.deepStrictEqual(order, ['rerun', 'stop', 'resume', 'pause', 'showExecutionPoint', 'stepOver', 'stepInto',
+      'stepIntoMyCode', 'stepOut', 'runToCursor', 'evaluateExpression', 'viewBreakpoints', 'muteBreakpoints']);
+    const page = runPage();
+    const { model } = setup();
+    model.continued('s1');
+    page.send({ type: 'state', state: model.state });
+    const buttons = ['stepIntoMyCode', 'runToCursor', 'evaluateExpression'].map((a) => page.dom.find((e) => e.dataset.action === a)!);
+    assert.ok(buttons.every((b) => b.disabled), 'disabled while running');
+    await model.stopped('s1', 1);
+    page.send({ type: 'state', state: model.state });
+    assert.ok(buttons.every((b) => !b.disabled), 'enabled while paused');
+    buttons[0].click();
+    assert.deepStrictEqual(page.sent[page.sent.length - 1], { type: 'action', id: 's1', action: 'stepIntoMyCode' });
+  });
+
+  test('page: the Show Execution Point button sits before Step Over and works only while paused', async () => {
+    const html = getDebugPanelHtml('vscode-webview:', 'N');
+    assert.ok(html.indexOf('data-action="showExecutionPoint"') < html.indexOf('data-action="stepOver"'));
+    const page = runPage();
+    const { model } = setup();
+    model.continued('s1');
+    page.send({ type: 'state', state: model.state });
+    const button = page.dom.find((e) => e.dataset.action === 'showExecutionPoint')!;
+    assert.strictEqual(button.disabled, true, 'disabled while running');
+    await model.stopped('s1', 1);
+    page.send({ type: 'state', state: model.state });
+    assert.strictEqual(button.disabled, false, 'enabled while paused');
+    button.click();
+    assert.deepStrictEqual(page.sent[page.sent.length - 1], { type: 'action', id: 's1', action: 'showExecutionPoint' });
+  });
+
+  test('Alt+F10 is free for Show Execution Point (no VS Code default uses it while debugging)', async () => {
+    const pkg = extensions.getExtension('catalinpop.aspycharm')!.packageJSON.contributes;
+    const key = pkg.keybindings.find((k: { command: string }) => k.command === 'aspycharm.debug.showExecutionPoint');
+    assert.deepStrictEqual([key?.key, key?.when], ['alt+f10', "inDebugMode && debugState == 'stopped'"]);
+    await commands.executeCommand('workbench.action.openDefaultKeybindingsFile');
+    const text = window.activeTextEditor?.document.getText() ?? '';
+    await commands.executeCommand('workbench.action.closeActiveEditor');
+    assert.ok(text.includes('"key"'), 'read the default keybindings');
+    // Known, accepted overlap: "Go to Next Comment Thread" (only in editors with review comments, e.g. a pull
+    // request). While a program is paused there, Alt+F10 shows the execution point, as in PyCharm.
+    const known = /"command":\s*"editor\.action\.nextCommentedRangeAction"[\s\S]*"when":\s*"activeEditorHasCommentingRange"/;
+    const others = [...text.matchAll(/\{[^{}]*\}/g)].map((m) => m[0])
+      .filter((e) => /"key":\s*"alt\+f10"/.test(e) && !/"command":\s*"(aspycharm\.|-)/.test(e) && !known.test(e));
+    assert.deepStrictEqual(others, [], 'alt+f10 is not used by another command');
+    assert.ok((await commands.getCommands(true)).includes('aspycharm.debug.showExecutionPoint'));
+  });
+
+  test('PyCharm\'s keys for Step Into My Code, Run to Cursor and Evaluate Expression: only known overlaps', async () => {
+    const pkg = extensions.getExtension('catalinpop.aspycharm')!.packageJSON.contributes;
+    const ours: Record<string, string> = {
+      'aspycharm.debug.stepIntoMyCode': 'alt+shift+f7',
+      'aspycharm.debug.runToCursor': 'alt+f9',
+      'aspycharm.debug.evaluateExpression': 'alt+f8',
+    };
+    for (const [command, key] of Object.entries(ours)) {
+      const k = pkg.keybindings.find((b: { command: string }) => b.command === command);
+      assert.deepStrictEqual([k?.key, k?.when], [key, "inDebugMode && debugState == 'stopped'"], command);
+      assert.ok((await commands.getCommands(true)).includes(command), `${command} registered`);
+    }
+    await commands.executeCommand('workbench.action.openDefaultKeybindingsFile');
+    const text = window.activeTextEditor?.document.getText() ?? '';
+    await commands.executeCommand('workbench.action.closeActiveEditor');
+    // Known, accepted overlaps: ours apply only while a program is paused in the debugger (then they win, as in
+    // PyCharm); the rest of the time these keep working as in VS Code. Documented in the README.
+    const known: Record<string, string[]> = {
+      'alt+f8': ['editor.action.marker.next', 'testing.goToNextMessage'],
+      'alt+f9': ['editor.action.nextCommentThreadAction', 'testing.coverage.goToNextMissedLine'],
+      'alt+shift+f7': [],
+    };
+    const users = (key: string) => [...text.matchAll(/\{[^{}]*\}/g)].map((m) => m[0].replace(/\s+/g, ' '))
+      .filter((e) => e.includes(`"key": "${key}"`) && !/"command": "(aspycharm\.|-)/.test(e))
+      .map((e) => /"command": "([^"]+)"/.exec(e)![1]);
+    for (const key of Object.values(ours)) {
+      assert.deepStrictEqual(users(key).filter((c) => !known[key].includes(c)), [], `${key}: a new clash`);
+    }
   });
 
   test('contributed: a Debug tab in the bottom panel, frame commands with Ctrl+Alt+Up/Down, settings', async () => {

@@ -10,6 +10,8 @@ import { PreRunRunner } from '../../charmrun/preRunRunner';
 import { createDefaultConfig, createPreRunStep, normalizePreRunSteps } from '../../charmrun/types';
 import { formatArgs, parseArgs } from '../../charmrun/webview/argsText';
 import { getEditorHtml } from '../../charmrun/webview/configEditorHtml';
+import { pinManagedPaths, pinToWorkspace, unpinFromWorkspace } from '../../charmrun/launchPaths';
+import { Runner } from '../../charmrun/runner';
 
 // A workspace folder on a temp directory, and an extension context with an in-memory workspaceState.
 function tempFolder(): WorkspaceFolder {
@@ -174,6 +176,22 @@ suite('PyCharm-style Run: launch.json store', () => {
     assert.strictEqual(warnings.shown.length, 2, 'a new breakage is reported again');
   });
 
+  test('a relative script is saved as ${workspaceFolder}/..., so VS Code\'s own launcher finds it (bug: scripts/scripts/junk.py)', () => {
+    const junk = newConfig('junk', 'scripts/junk.py');
+    junk.cwd = '${workspaceFolder}/scripts';
+    junk.envFile = '.env';
+    store.addConfiguration(folder, junk);
+    const saved = JSON.parse(readLaunch(folder)).configurations[0];
+    assert.strictEqual(saved.program, '${workspaceFolder}/scripts/junk.py');
+    assert.strictEqual(saved.envFile, '${workspaceFolder}/.env');
+    const [read] = store.getConfigurations(folder);
+    assert.deepStrictEqual([read.script, read.envFile], ['scripts/junk.py', '.env'], 'the editor shows it as typed');
+    for (const kept of [path.join(folder.uri.fsPath, 'abs.py'), '${file}', '${workspaceFolder}/x.py']) {
+      store.updateConfiguration(folder, { ...read, script: kept });
+      assert.strictEqual(JSON.parse(readLaunch(folder)).configurations[0].program, kept, `${kept} stays as is`);
+    }
+  });
+
   test('a new launch.json is created when there is none', () => {
     store.addConfiguration(folder, newConfig('First'));
     const parsed = JSON.parse(readLaunch(folder));
@@ -333,6 +351,45 @@ suite('PyCharm-style Run: external tool steps', function () {
     const tool = makeTool('tools');
     assert.strictEqual(await runTool(tool, ['x', '3']), false);
     assert.ok(errors.some(e => e.includes('exit code 3')), errors.join('\n'));
+  });
+});
+
+suite('PyCharm-style Run: Rerun and launch paths', () => {
+  test('entries saved before the fix get their relative paths pinned when VS Code launches them', () => {
+    const old = { type: 'debugpy', request: 'launch', name: 'junk', program: 'scripts/junk.py', cwd: '${workspaceFolder}/scripts', envFile: './.env', charmrunManaged: true };
+    assert.deepStrictEqual([pinManagedPaths(old).program, pinManagedPaths(old).envFile], ['${workspaceFolder}/scripts/junk.py', '${workspaceFolder}/.env']);
+    const users = { ...old, charmrunManaged: undefined };
+    assert.strictEqual(pinManagedPaths(users).program, 'scripts/junk.py', 'other launch.json entries are left alone');
+    assert.strictEqual(pinToWorkspace('C:\\x\\a.py'), 'C:\\x\\a.py');
+    assert.strictEqual(pinToWorkspace('/home/a.py'), '/home/a.py');
+    assert.strictEqual(pinToWorkspace(''), '');
+    assert.strictEqual(unpinFromWorkspace('${workspaceFolder}\\a.py'), 'a.py');
+  });
+
+  test('Rerun repeats a known run with its configuration, folder and mode; an unknown run is reported', async () => {
+    class SpyRunner extends Runner {
+      calls: unknown[][] = [];
+      override async execute(...args: any[]): Promise<boolean> {
+        this.calls.push(args);
+        return true;
+      }
+    }
+    const output = window.createOutputChannel('AsPycharm rerun test');
+    const runner = new SpyRunner(new ConfigStore(fakeContext()), output);
+    try {
+      const folder = tempFolder();
+      const config = createDefaultConfig('main');
+      (runner as any).remember('run-1', { config, folder, mode: 'debug' });
+      assert.strictEqual(await runner.rerun('run-1'), true);
+      assert.deepStrictEqual(runner.calls, [[config, folder, 'debug']]);
+      assert.strictEqual(await runner.rerun('unknown'), false, 'so the Debug panel starts the configuration itself');
+      assert.ok((await commands.getCommands(true)).includes('charmrun.rerunLaunch'));
+      assert.strictEqual(await commands.executeCommand('charmrun.rerunLaunch', 'never-launched'), false);
+      fs.removeSync(folder.uri.fsPath);
+    } finally {
+      runner.dispose();
+      output.dispose();
+    }
   });
 });
 

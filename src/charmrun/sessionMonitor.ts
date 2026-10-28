@@ -5,6 +5,8 @@ import * as fs from 'fs';
 export const MANAGED_KEY = 'charmrunManaged';
 export const LAUNCH_TOKEN_KEY = 'charmrunLaunchToken';
 export const OUTPUT_FILE_KEY = 'charmrunOutputFile';
+/** Identifies one launch, so Rerun can repeat exactly that run (see Runner.rerun). */
+export const RUN_ID_KEY = 'charmrunRunId';
 
 export interface SessionOutcome {
   /** Exit code reported by debugpy's `exited` event, if any. */

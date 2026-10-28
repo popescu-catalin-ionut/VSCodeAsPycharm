@@ -92,6 +92,19 @@ export class DebugModel {
   private entries = new Map<string, Entry>();
   private watchExpressions: string[] = [];
   private listeners: Array<() => void> = [];
+  /** Waiting for a session's next stop (true) or its end (false). */
+  private stopWaiters = new Map<string, Array<(stopped: boolean) => void>>();
+
+  /** Resolves once the session stops again (frames loaded): true; or ends: false. */
+  nextStop(id: string): Promise<boolean> {
+    return new Promise((resolve) => this.stopWaiters.set(id, [...(this.stopWaiters.get(id) ?? []), resolve]));
+  }
+
+  private settleStopWaiters(id: string, stopped: boolean): void {
+    const waiters = this.stopWaiters.get(id) ?? [];
+    this.stopWaiters.delete(id);
+    waiters.forEach((w) => w(stopped));
+  }
   activeId?: string;
 
   onDidChange(listener: () => void): { dispose(): void } {
@@ -143,6 +156,7 @@ export class DebugModel {
     entry.generation++;
     Object.assign(entry.view, { state: 'ended', stopReason: undefined, threads: [], frames: [], variables: [], scopes: [] });
     entry.view.threadId = entry.view.frameId = undefined;
+    this.settleStopWaiters(id, false);
     this.changed();
   }
 
@@ -150,6 +164,7 @@ export class DebugModel {
     if (!this.entries.delete(id)) {
       return;
     }
+    this.settleStopWaiters(id, false);
     if (this.activeId === id) {
       this.activeId = [...this.entries.keys()].pop();
     }
@@ -185,6 +200,35 @@ export class DebugModel {
     view.threads = (threads?.threads ?? []).map((t: any) => ({ id: t.id, name: t.name }));
     view.threadId = threadId ?? view.threads[0]?.id;
     await this.loadFrames(entry, generation);
+    if (generation === entry.generation) {
+      this.settleStopWaiters(id, true);
+    }
+  }
+
+  /**
+   * PyCharm's "Step Into My Code": step into, then keep stepping while the program is in library code (the
+   * standard library, site-packages, a virtual environment), so it stops at the next line of your own code. Stops
+   * early at a breakpoint or exception. After `maxSteps` steps still in library code, it steps out instead.
+   */
+  async stepIntoMyCode(id: string, isMyCode: (path: string | undefined) => boolean, maxSteps = 300): Promise<void> {
+    if (this.entries.get(id)?.view.state !== 'stopped') {
+      return;
+    }
+    for (const [action, limit] of [['stepInto', maxSteps], ['stepOut', 50]] as const) {
+      for (let i = 0; i < limit; i++) {
+        const stop = this.nextStop(id);
+        if (!(await this.step(id, action))) {
+          return; // refused: the program is where it was
+        }
+        if (!(await stop)) {
+          return; // the program ended
+        }
+        const view = this.entries.get(id)?.view;
+        if (!view || (view.stopReason !== 'step' && view.stopReason !== undefined) || isMyCode(view.frames[0]?.path)) {
+          return; // a breakpoint, an exception, or your code
+        }
+      }
+    }
   }
 
   /** A session restarted under the same id (its debugger initialized again): it runs again. */
@@ -255,6 +299,19 @@ export class DebugModel {
       await this.selectFrame(entry.view.id, next.id);
     }
     return next;
+  }
+
+  /**
+   * PyCharm's "Show Execution Point": back to where the shown thread is paused (its top frame), whichever frame was
+   * selected. Undefined when no program is paused.
+   */
+  async showExecutionPoint(): Promise<FrameView | undefined> {
+    const entry = this.activeId === undefined ? undefined : this.entries.get(this.activeId);
+    const top = entry?.view.state === 'stopped' ? entry.view.frames[0] : undefined;
+    if (entry && top && entry.view.frameId !== top.id) {
+      await this.selectFrame(entry.view.id, top.id);
+    }
+    return top;
   }
 
   /** True when the selected frame is not the top one, i.e. VS Code does not highlight it itself. */
@@ -331,15 +388,16 @@ export class DebugModel {
   }
 
   /** Toolbar step actions, on the shown thread. The panel shows "running" right away. */
-  async step(id: string, action: StepAction): Promise<void> {
+  /** Sends the step; false when it was not possible or the debugger refused it. */
+  async step(id: string, action: StepAction): Promise<boolean> {
     const entry = this.entries.get(id);
     if (!entry || entry.view.state === 'ended') {
-      return;
+      return false;
     }
     const threadId = entry.view.threadId ?? entry.view.threads[0]?.id ?? 0;
     const command = { resume: 'continue', pause: 'pause', stepOver: 'next', stepInto: 'stepIn', stepOut: 'stepOut' }[action];
     if (action === 'pause' ? entry.view.state !== 'running' : entry.view.state !== 'stopped') {
-      return;
+      return false;
     }
     const reason = entry.view.stopReason;
     if (action !== 'pause') {
@@ -347,6 +405,7 @@ export class DebugModel {
     }
     try {
       await entry.session.customRequest(command, { threadId });
+      return true;
     } catch (error) {
       this.appendConsole(entry, 'error', `${command} failed: ${message(error)}`);
       if (action !== 'pause') {
@@ -354,6 +413,7 @@ export class DebugModel {
       } else {
         this.changed();
       }
+      return false;
     }
   }
 

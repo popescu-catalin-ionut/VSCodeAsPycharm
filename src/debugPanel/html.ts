@@ -6,8 +6,12 @@ const ICONS: Record<string, string> = {
   stop: '<rect x="3.5" y="3.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>',
   resume: '<path d="M3 3v10" stroke="currentColor" stroke-width="1.6"/><path d="M6 3l7 5-7 5z" fill="none" stroke="currentColor" stroke-width="1.4"/>',
   pause: '<path d="M5 3v10M11 3v10" stroke="currentColor" stroke-width="1.8"/>',
+  showExecutionPoint: '<path d="M2 3.5h12M7 8h7M2 12.5h12" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.6 4.8 8l-3 2.4z" fill="currentColor"/>',
   stepOver: '<path d="M2.5 9a5.5 5.5 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M13.8 5.6v3.6h-3.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2 13h12" stroke="currentColor" stroke-width="1.4"/>',
   stepInto: '<path d="M8 2v8M4.5 6.8 8 10.3l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2 13.5h12" stroke="currentColor" stroke-width="1.4"/>',
+  stepIntoMyCode: '<path d="M7 2v7M3.8 5.8 7 9l3.2-3.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2 13.5h8" stroke="currentColor" stroke-width="1.4"/><rect x="11" y="10" width="4" height="4" rx=".8" fill="currentColor"/>',
+  runToCursor: '<path d="M1.5 8h7M6.2 5.3 9 8l-2.8 2.7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12.5 3.5v9M11 3.5h3M11 12.5h3" stroke="currentColor" stroke-width="1.3"/>',
+  evaluateExpression: '<rect x="3" y="1.5" width="10" height="13" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5 4.5h6" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 8h1M9.5 8h1M5.5 10.5h1M9.5 10.5h1M5.5 13h1M9.5 13h1" stroke="currentColor" stroke-width="1.4"/>',
   stepOut: '<path d="M8 11V3M4.5 6.2 8 2.7l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2 13.5h12" stroke="currentColor" stroke-width="1.4"/>',
   viewBreakpoints: '<circle cx="6" cy="9" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="7" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>',
   muteBreakpoints: '<circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 13 13 3" stroke="currentColor" stroke-width="1.4"/>',
@@ -20,9 +24,14 @@ const TOOLBAR: [string, string, string][] = [
   ['resume', 'Resume Program (F5)', 'go'],
   ['pause', 'Pause Program (F6)', 'go'],
   ['|', '', ''],
+  ['showExecutionPoint', 'Show Execution Point (Alt+F10)', 'step'],
   ['stepOver', 'Step Over (F10)', 'step'],
   ['stepInto', 'Step Into (F11)', 'step'],
+  ['stepIntoMyCode', 'Step Into My Code (Alt+Shift+F7)', 'step'],
   ['stepOut', 'Step Out (Shift+F11)', 'step'],
+  ['runToCursor', 'Run to Cursor (Alt+F9)', 'step'],
+  ['|', '', ''],
+  ['evaluateExpression', 'Evaluate Expression (Alt+F8)', 'step'],
   ['|', '', ''],
   ['viewBreakpoints', 'View Breakpoints', 'bp'],
   ['muteBreakpoints', 'Mute Breakpoints', 'bp'],
@@ -181,7 +190,7 @@ export function getDebugPanelHtml(cspSource: string, nonce: string): string {
     const st = s ? s.state : 'ended';
     document.querySelectorAll('.tool').forEach((b) => {
       const a = b.dataset.action;
-      b.disabled = !s || (a === 'pause' ? st !== 'running' : ['resume', 'stepOver', 'stepInto', 'stepOut'].includes(a) ? st !== 'stopped' : a === 'stop' ? st === 'ended' : false);
+      b.disabled = !s || (a === 'pause' ? st !== 'running' : ['resume', 'showExecutionPoint', 'stepOver', 'stepInto', 'stepIntoMyCode', 'stepOut', 'runToCursor', 'evaluateExpression'].includes(a) ? st !== 'stopped' : a === 'stop' ? st === 'ended' : false);
       if (a === 'muteBreakpoints') b.classList.toggle('muted', Boolean(state.breakpointsMuted));
     });
   }

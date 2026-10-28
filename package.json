@@ -2,7 +2,7 @@
   "name": "aspycharm",
   "displayName": "AsPycharm",
   "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun) + Ctrl+Click links in Python docstrings and comments (rufatpro py-doc-links) + a PyCharm-style Debug panel, as one extension.",
-  "version": "2.2.2",
+  "version": "2.4.0",
   "repository": {
     "type": "git",
     "url": "http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm"
@@ -364,6 +364,22 @@
         {
           "command": "charmrun.modifyFileConfiguration",
           "when": "editorLangId == python"
+        },
+        {
+          "command": "aspycharm.debug.showExecutionPoint",
+          "when": "inDebugMode"
+        },
+        {
+          "command": "aspycharm.debug.stepIntoMyCode",
+          "when": "inDebugMode"
+        },
+        {
+          "command": "aspycharm.debug.runToCursor",
+          "when": "inDebugMode"
+        },
+        {
+          "command": "aspycharm.debug.evaluateExpression",
+          "when": "inDebugMode"
         }
       ],
       "view/title": [
@@ -557,6 +573,26 @@
         "key": "ctrl+shift+f9",
         "mac": "ctrl+shift+d",
         "when": "editorTextFocus && editorLangId == python && resourceScheme == file"
+      },
+      {
+        "command": "aspycharm.debug.showExecutionPoint",
+        "key": "alt+f10",
+        "when": "inDebugMode && debugState == 'stopped'"
+      },
+      {
+        "command": "aspycharm.debug.stepIntoMyCode",
+        "key": "alt+shift+f7",
+        "when": "inDebugMode && debugState == 'stopped'"
+      },
+      {
+        "command": "aspycharm.debug.runToCursor",
+        "key": "alt+f9",
+        "when": "inDebugMode && debugState == 'stopped'"
+      },
+      {
+        "command": "aspycharm.debug.evaluateExpression",
+        "key": "alt+f8",
+        "when": "inDebugMode && debugState == 'stopped'"
       }
     ],
     "commands": [
@@ -777,6 +813,27 @@
         "command": "charmrun.modifyFileConfiguration",
         "title": "Modify Run Configuration...",
         "category": "PyCharm-style Run"
+      },
+      {
+        "command": "aspycharm.debug.showExecutionPoint",
+        "title": "Debug: Show Execution Point",
+        "category": "AsPycharm",
+        "icon": "$(target)"
+      },
+      {
+        "command": "aspycharm.debug.stepIntoMyCode",
+        "title": "Debug: Step Into My Code",
+        "category": "AsPycharm"
+      },
+      {
+        "command": "aspycharm.debug.runToCursor",
+        "title": "Debug: Run to Cursor",
+        "category": "AsPycharm"
+      },
+      {
+        "command": "aspycharm.debug.evaluateExpression",
+        "title": "Debug: Evaluate Expression...",
+        "category": "AsPycharm"
       }
     ],
     "viewsContainers": {
