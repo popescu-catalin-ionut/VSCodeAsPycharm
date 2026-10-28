@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "http://192.168.3.241:3000/catalinpop/AsPycharm"
+    "url": "http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm"
   },
   "keywords": [
     "compare",

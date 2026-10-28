@@ -1,6 +1,6 @@
 # AsPycharm
 
-One VS Code extension, our own build, from our Forgejo: `http://192.168.3.241:3000/catalinpop/AsPycharm`.
+One VS Code extension, our own build, from our Forgejo: `http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm`.
 It merges two extensions, reviewed line by line on 2026-10-27:
 
 | Part | From | What it adds |
@@ -17,14 +17,14 @@ over our build), the Refresh Explorer menu entry, and a fix: deleting a file now
 The built extension is committed in `dist\`. On any Windows machine with VS Code and access to Forgejo:
 
 ```powershell
-git clone git@git-local:catalinpop/AsPycharm.git D:\AsPycharm   # or ssh://git@192.168.3.241:2223/catalinpop/AsPycharm.git
-D:\AsPycharm\install.cmd
+git clone git@git-local:catalinpop/VSCodeAsPycharm.git D:\VSCodeAsPycharm   # or ssh://git@192.168.3.241:2223/catalinpop/VSCodeAsPycharm.git
+D:\VSCodeAsPycharm\install.cmd
 ```
 
 - `install.cmd` (or `install.ps1`) uninstalls the two extensions it replaces if present
   (`moshfeu.compare-folders`, `linda-cheung.content-menu-item-refresh`), installs `dist\aspycharm-*.vsix`, and checks
   that VS Code lists it. Then reload the VS Code windows.
-- **Update:** `D:\AsPycharm\install.cmd -Pull` (git pull, then reinstall).
+- **Update:** `D:\VSCodeAsPycharm\install.cmd -Pull` (git pull, then reinstall).
 - **No Forgejo access** (e.g. the laptop away from home): copy `dist\aspycharm-*.vsix` over and run
   `install.ps1 -Vsix <path>`, or VS Code > Extensions > `...` > Install from VSIX.
 

@@ -73,7 +73,7 @@ try {
   Get-ChildItem $dist -Filter '*.vsix' | Remove-Item
   $out = Join-Path $dist "aspycharm-$version.vsix"
   # README's relative links resolve against our Forgejo (vsce only auto-detects GitHub / GitLab).
-  $repo = 'http://192.168.3.241:3000/catalinpop/AsPycharm'
+  $repo = 'http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm'
   Invoke-Checked 'npx.cmd' @('--yes', "@vscode/vsce@$vsceVersion", 'package', '--yarn', '-o', $out,
     '--baseContentUrl', "$repo/src/branch/main", '--baseImagesUrl', "$repo/raw/branch/main")
   Write-Host "Built $out"

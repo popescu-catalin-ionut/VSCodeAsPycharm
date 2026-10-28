@@ -2,9 +2,9 @@
 
 Our VS Code extension: upstream Compare Folders (moshfeu/vscode-compare-folders, MIT, remote `upstream`) + the
 Explorer "Refresh Explorer" menu entry (from LLLLinda/vscode-extension-refresh), as one extension
-`catalinpop.aspycharm`. Repository: Forgejo `catalinpop/AsPycharm` (`git@git-local:catalinpop/AsPycharm.git`), branch
-`main`, checkout `D:\AsPycharm`. Install and build steps are in [README.md](README.md). Upstream's own agent notes are in
-[AGENTS.md](AGENTS.md).
+`catalinpop.aspycharm`. Repository: Forgejo `catalinpop/VSCodeAsPycharm`
+(`git@git-local:catalinpop/VSCodeAsPycharm.git`), branch `main`, checkout `D:\VSCodeAsPycharm`. Install and build steps
+are in [README.md](README.md). Upstream's own agent notes are in [AGENTS.md](AGENTS.md).
 
 - **Install:** `install.cmd` (`install.ps1`) installs the committed `dist\aspycharm-*.vsix`; it needs no Node.
 - **Build:** `build.ps1 -Test` (portable Node in `.tools\`, `yarn.lock` only, install scripts off, tests in a test copy
