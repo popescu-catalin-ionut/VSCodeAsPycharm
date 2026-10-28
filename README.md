@@ -189,7 +189,7 @@ panel comes forward.
 | Evaluate / watches | The box above the tree: **Enter** evaluates in the selected frame and shows `result = ...` at the top; **Ctrl+Shift+Enter** adds a watch (blue, at the top of every stop; × removes it). |
 | **Console** | The program's output (when it writes to the Debug Console: PyCharm-style Run's *Internal console* terminal option, or `"console": "internalConsole"`), and a `>>>` prompt that runs Python in the selected frame. |
 | Toolbar | Rerun, Stop, Resume (F5), Pause, Show Execution Point (Alt+F10), Step Over (F10), Step Into (F11), Step Into My Code (Alt+Shift+F7), Step Out (Shift+F11), Run to Cursor (Alt+F9), Evaluate Expression (Alt+F8), View Breakpoints, Mute Breakpoints. Steps act on the thread shown in the panel. |
-| Rerun | Runs the same program again, the way it was first started: the same script (also when it was started as "the current file" and you are now in another file), the same Run or Debug mode, and for PyCharm-style Run configurations their before-launch steps again. A new tab replaces the old one. |
+| Rerun | Runs the same program again, the way it was first started: the same script (also when it was started as "the current file" and you are now in another file), the same Run or Debug mode, and for PyCharm-style Run configurations their before-launch steps again. A new tab replaces the old one. Extra clicks while it restarts are ignored. |
 | Step Into My Code | **Alt+Shift+F7**: steps into the next line of *your* code, past library code (the standard library, `site-packages`, virtual environments): it keeps stepping while the program is in such code. It stops early at a breakpoint or an exception, and steps out if a library goes on for more than 300 steps. "Your code" is files in the open folder(s). Plain Step Into goes into library code only when the configuration has `"justMyCode": false`. |
 | Run to Cursor | **Alt+F9**: continues to the line with the cursor in the editor (VS Code's own *Run to Cursor*). |
 | Evaluate Expression | The calculator button or **Alt+F8**: asks for a Python expression (filled in with the selection, or the name under the cursor such as `my_car.speed`), evaluates it in the selected frame, and shows `result = {type} value` at the top of the variables, expandable. |
@@ -225,6 +225,9 @@ cd VSCodeAsPycharm
   `dist\vscodeaspycharm-*.vsix`, and checks that VS Code lists it. Then reload the VS Code windows.
 - **Update:** in the cloned folder, `.\install.cmd -Pull` (git pull, then reinstall).
 - **Without Git** (or without cloning): install from the download link, below.
+- **Which version runs:** a VS Code window keeps the version it loaded until it is reloaded (Ctrl+Shift+P >
+  *Developer: Reload Window*), so an open window can still show a bug a newer version fixed. The Extensions view shows
+  the installed version. That number is built into the file: renaming a `.vsix` does not change it.
 
 ## Install from GitHub (a download link, from anywhere)
 

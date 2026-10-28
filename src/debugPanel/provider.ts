@@ -250,14 +250,27 @@ export class DebugPanelProvider implements WebviewViewProvider, Disposable {
     while (session?.parentSession) {
       session = session.parentSession;
     }
-    if (!session) {
+    // A second click while the program is still being stopped would start it twice.
+    if (!session || this.rerunning.has(session.id)) {
       return;
     }
-    const plan = planRerun(session.configuration);
-    if (this.model.session(session.id)?.state !== 'ended') {
-      await this.stop(session.id);
+    this.rerunning.add(session.id);
+    try {
+      const plan = planRerun(session.configuration);
+      if (this.model.session(session.id)?.state !== 'ended') {
+        await this.stop(session.id);
+      }
+      this.model.closeSession(session.id);
+      await this.relaunch(plan, session.workspaceFolder);
+    } finally {
+      this.rerunning.delete(session.id);
     }
-    this.model.closeSession(session.id);
+  }
+
+  /** Root sessions whose Rerun is in progress. */
+  private readonly rerunning = new Set<string>();
+
+  private async relaunch(plan: ReturnType<typeof planRerun>, folder: DebugSession['workspaceFolder']): Promise<void> {
     // Started by PyCharm-style Run: repeat that run (its before-launch steps too).
     if (plan.runId) {
       try {
@@ -268,7 +281,7 @@ export class DebugPanelProvider implements WebviewViewProvider, Disposable {
         // PyCharm-style Run is not available: start the configuration below instead
       }
     }
-    await debug.startDebugging(session.workspaceFolder, plan.configuration, { noDebug: plan.noDebug });
+    await debug.startDebugging(folder, plan.configuration, { noDebug: plan.noDebug });
   }
 
   /** PyCharm's "Step Into My Code" (Alt+Shift+F7): into the next line of project code, past library code. */

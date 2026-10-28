@@ -643,6 +643,34 @@ suite('Debug panel: page and wiring', () => {
     assert.strictEqual(planRerun({ type: 'node', request: 'launch', name: 'x' }).runId, undefined);
   });
 
+  test('two quick clicks on Rerun start the program once (bug: it ran twice)', async () => {
+    const provider = new DebugPanelProvider();
+    const session = Object.assign(new FakeSession('r1', 'junk'), {
+      configuration: { type: 'debugpy', request: 'launch', name: 'junk', program: 'C:\\proj\\scripts\\junk.py' },
+      workspaceFolder: undefined,
+    });
+    provider.model.addSession(session);
+    await provider.model.stopped('r1', 1);
+    // Stopping a paused program takes a moment; the second click lands meanwhile.
+    let stopped!: () => void;
+    const stopping = new Promise<void>((resolve) => (stopped = resolve));
+    const launches: any[] = [];
+    Object.assign(provider as any, {
+      stop: () => stopping,
+      relaunch: async (plan: any) => { launches.push(plan); },
+    });
+    const webview = { postMessage: async () => true } as any;
+    const first = provider.handleMessage({ type: 'action', id: 'r1', action: 'rerun' }, webview);
+    const second = provider.handleMessage({ type: 'action', id: 'r1', action: 'rerun' }, webview);
+    stopped();
+    await Promise.all([first, second]);
+    assert.strictEqual(launches.length, 1);
+    assert.strictEqual(launches[0].configuration.program, 'C:\\proj\\scripts\\junk.py');
+    await provider.handleMessage({ type: 'action', id: 'r1', action: 'rerun' }, webview);
+    assert.strictEqual(launches.length, 1, 'a late click on the closed tab does nothing');
+    provider.dispose();
+  });
+
   test('Evaluate Expression starts with the selection or the dotted name under the cursor', async () => {
     const editor = await window.showTextDocument(await workspace.openTextDocument({ content: 'total = my_car.speed + 1', language: 'python' }));
     try {
