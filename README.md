@@ -70,6 +70,26 @@ buttons in the sidebar, or the Command Palette (*CharmRun: Run Configuration*, *
   (`ms-python.debugpy`).
 - Failures (missing interpreter or script, non-zero exit code) are shown as notifications; log: *Output > CharmRun*.
 
+**Right-click a Python file, as in PyCharm** (in the Explorer or in the editor):
+
+| Menu entry | PyCharm | Keys (Windows / Linux, macOS) |
+|---|---|---|
+| **Run Python File (PyCharm-style)** | Run 'main' | Ctrl+Shift+F10, ⌃⇧R |
+| **Debug Python File (PyCharm-style)** | Debug 'main' | Ctrl+Shift+F9, ⌃⇧D |
+| **Modify Run Configuration...** | Modify Run Configuration... | |
+
+- If a CharmRun configuration already runs that file, it is used (with its interpreter, arguments, environment and
+  before-launch steps) and becomes the active one in the status bar.
+- Otherwise, like PyCharm, a temporary configuration named after the file (`main` for `main.py`) runs it, with the
+  file's folder as working directory and the workspace's `.env` if there is one. It is not written to `launch.json`;
+  **Modify Run Configuration...** opens it in the editor as a *New Run Configuration*, and saving it there keeps it.
+- VS Code's menus cannot show the file name in an entry, so they read *Run Python File* rather than *Run 'main'*.
+  The keys work with the cursor in a Python file. Ctrl+Shift+F9 is also the Chat view's *previous file tree*, which
+  only applies inside Chat; on macOS, ⌃⇧R in a Python file runs it instead of opening *Refactor...*.
+- Works for `.py` and `.pyw` files (any letter case), and in the editor for any file open as Python (e.g. a script
+  without an extension that starts with `#!/usr/bin/env python`).
+- The file must be in an open folder (File > Open Folder), since configurations live in its `.vscode/launch.json`.
+
 Like VS Code's own `tasks.json`, a `launch.json` from someone else's repository can contain commands (an interpreter
 path, external-tool steps). They run only when you press Run or Debug, and VS Code keeps the whole extension off in
 Restricted Mode, so trust a folder before running its configurations.

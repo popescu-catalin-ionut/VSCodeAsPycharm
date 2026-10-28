@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import * as fs from 'fs-extra';
+import * as nodeFs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { commands, Position, Uri, window, workspace, type LocationLink, type TextDocument } from 'vscode';
@@ -174,7 +175,13 @@ suite('Python Doc Links: Ctrl+Click in a Python file', function () {
 
   suiteTeardown(async () => {
     await commands.executeCommand('workbench.action.closeAllEditors');
-    fs.removeSync(root);
+    // VS Code can still hold the folder of a just-closed file for a moment ("EBUSY" on Windows): retry, and leave
+    // the temp folder behind rather than fail the run over cleanup.
+    try {
+      nodeFs.rmSync(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    } catch {
+      // a temp folder; the OS cleans it up
+    }
   });
 
   // Go to Definition with the cursor on `needle` (in the line containing `onLine`, or its first occurrence).

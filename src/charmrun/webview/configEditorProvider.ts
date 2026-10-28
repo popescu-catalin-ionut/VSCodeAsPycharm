@@ -25,9 +25,15 @@ export class ConfigEditorProvider implements vscode.Disposable {
     private runner: Runner
   ) {}
 
+  /**
+   * @param config the configuration to edit; a new default one when omitted.
+   * @param isNew true when `config` is not stored yet (e.g. made from a file by "Modify Run Configuration..."):
+   *   the form says "New Run Configuration" and Save adds it.
+   */
   async open(
     folder: vscode.WorkspaceFolder,
-    config?: RunConfiguration
+    config?: RunConfiguration,
+    isNew = !config
   ): Promise<void> {
     // Re-opening the configuration already on screen keeps the form as it
     // is, unsaved edits included, rather than re-rendering over them.
@@ -49,7 +55,7 @@ export class ConfigEditorProvider implements vscode.Disposable {
     }
 
     this.currentFolder = folder;
-    this.isNew = !config;
+    this.isNew = isNew;
     this.isDirty = false;
     const editConfig = config ?? this.createDefaultConfigForFolder(folder);
     this.currentConfigId = editConfig.id;
@@ -59,7 +65,7 @@ export class ConfigEditorProvider implements vscode.Disposable {
     } else {
       this.panel = vscode.window.createWebviewPanel(
         'charmrun.configEditor',
-        config ? `Edit: ${config.name}` : 'New Run Configuration',
+        isNew ? 'New Run Configuration' : `Edit: ${editConfig.name}`,
         vscode.ViewColumn.Active,
         {
           enableScripts: true,
@@ -81,7 +87,7 @@ export class ConfigEditorProvider implements vscode.Disposable {
       );
     }
 
-    this.panel.title = config ? `Edit: ${config.name}` : 'New Run Configuration';
+    this.panel.title = isNew ? 'New Run Configuration' : `Edit: ${editConfig.name}`;
     const nonce = getNonce();
     this.panel.webview.html = getEditorHtml(
       this.panel.webview,

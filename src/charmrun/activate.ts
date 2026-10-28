@@ -5,6 +5,7 @@ import { ConfigEditorProvider } from './webview/configEditorProvider';
 import { StatusBarManager } from './statusBar';
 import { Runner } from './runner';
 import { registerCommands } from './commands';
+import { registerFileRunCommands } from './fileRun';
 
 let outputChannel: vscode.OutputChannel | undefined;
 
@@ -22,6 +23,7 @@ export function activateCharmRun(context: vscode.ExtensionContext): void {
     const statusBar = new StatusBarManager(configStore);
 
     registerCommands(context, configStore, treeProvider, editorProvider, statusBar, runner);
+    registerFileRunCommands(context, configStore, runner, editorProvider);
     outputChannel.appendLine('Commands registered');
 
     const treeView = vscode.window.createTreeView('charmrun.configurationsView', {

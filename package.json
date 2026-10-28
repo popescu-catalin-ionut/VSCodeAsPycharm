@@ -2,7 +2,7 @@
   "name": "aspycharm",
   "displayName": "AsPycharm",
   "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun) + Ctrl+Click links in Python docstrings and comments (rufatpro py-doc-links) + a PyCharm-style Debug panel, as one extension.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "repository": {
     "type": "git",
     "url": "http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm"
@@ -352,6 +352,18 @@
         {
           "command": "aspycharm.debug.frameDown",
           "when": "inDebugMode"
+        },
+        {
+          "command": "charmrun.runFile",
+          "when": "editorLangId == python"
+        },
+        {
+          "command": "charmrun.debugFile",
+          "when": "editorLangId == python"
+        },
+        {
+          "command": "charmrun.modifyFileConfiguration",
+          "when": "editorLangId == python"
         }
       ],
       "view/title": [
@@ -404,6 +416,21 @@
         {
           "command": "workbench.files.action.refreshFilesExplorer",
           "group": "navigation"
+        },
+        {
+          "command": "charmrun.runFile",
+          "when": "!explorerResourceIsFolder && resourceExtname =~ /^\\.pyw?$/i",
+          "group": "1_charmrun@1"
+        },
+        {
+          "command": "charmrun.debugFile",
+          "when": "!explorerResourceIsFolder && resourceExtname =~ /^\\.pyw?$/i",
+          "group": "1_charmrun@2"
+        },
+        {
+          "command": "charmrun.modifyFileConfiguration",
+          "when": "!explorerResourceIsFolder && resourceExtname =~ /^\\.pyw?$/i",
+          "group": "1_charmrun@3"
         }
       ],
       "view/item/context": [
@@ -476,6 +503,23 @@
           "when": "view == charmrun.configurationsView && viewItem == runConfiguration",
           "group": "2_destructive@1"
         }
+      ],
+      "editor/context": [
+        {
+          "command": "charmrun.runFile",
+          "when": "editorLangId == python && resourceScheme == file",
+          "group": "1_charmrun@1"
+        },
+        {
+          "command": "charmrun.debugFile",
+          "when": "editorLangId == python && resourceScheme == file",
+          "group": "1_charmrun@2"
+        },
+        {
+          "command": "charmrun.modifyFileConfiguration",
+          "when": "editorLangId == python && resourceScheme == file",
+          "group": "1_charmrun@3"
+        }
       ]
     },
     "snippets": [
@@ -501,6 +545,18 @@
         "key": "ctrl+alt+down",
         "mac": "cmd+alt+down",
         "when": "inDebugMode && debugState == 'stopped'"
+      },
+      {
+        "command": "charmrun.runFile",
+        "key": "ctrl+shift+f10",
+        "mac": "ctrl+shift+r",
+        "when": "editorTextFocus && editorLangId == python && resourceScheme == file"
+      },
+      {
+        "command": "charmrun.debugFile",
+        "key": "ctrl+shift+f9",
+        "mac": "ctrl+shift+d",
+        "when": "editorTextFocus && editorLangId == python && resourceScheme == file"
       }
     ],
     "commands": [
@@ -704,6 +760,23 @@
         "command": "aspycharm.debug.frameDown",
         "title": "Debug: Next Frame (Down the Call Stack)",
         "category": "AsPycharm"
+      },
+      {
+        "command": "charmrun.runFile",
+        "title": "Run Python File (PyCharm-style)",
+        "category": "CharmRun",
+        "icon": "$(play)"
+      },
+      {
+        "command": "charmrun.debugFile",
+        "title": "Debug Python File (PyCharm-style)",
+        "category": "CharmRun",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "charmrun.modifyFileConfiguration",
+        "title": "Modify Run Configuration...",
+        "category": "CharmRun"
       }
     ],
     "viewsContainers": {
