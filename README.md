@@ -1,8 +1,8 @@
 # AsPycharm
 
 One VS Code extension, our own build. Source and downloads: <https://github.com/popescu-catalin-ionut/VSCodeAsPycharm>.
-It merges five extensions and plugins, each reviewed line by line (the first two on 2026-10-27, the others on
-2026-10-28):
+It merges six extensions and plugins, each reviewed line by line (the first two on 2026-10-27, the next three on
+2026-10-28, Git Blame Annotations on 2026-11-24):
 
 | Part | From | What it adds |
 |---|---|---|
@@ -12,6 +12,7 @@ It merges five extensions and plugins, each reviewed line by line (the first two
 | **PyCharm-style Run** (from CharmRun) | [yingbo/charmrun](https://github.com/yingbo/charmrun) v1.6.1 (MIT, licence in `resources/charmrun/`), ported at commit `2327ba4` into `src/charmrun/` | PyCharm-style Python run configurations: a sidebar, a form editor, Run / Debug buttons, before-launch steps |
 | **Python Doc Links** | [rufatpro/plugins `jetbrains/py-doc-links`](https://github.com/rufatpro/plugins/tree/main/jetbrains/py-doc-links) 0.2.10 (MIT, licence in `resources/pyDocLinks/`), a JetBrains plugin rewritten in TypeScript from commit `bae1de9` into `src/pyDocLinks/` | **Ctrl+Click** on `file.py` and Sphinx references (`:py:func:`, `:class:`, ...) in docstrings and comments |
 | **PyCharm-style Debug panel** | our own, in `src/debugPanel/` | PyCharm's Debug tool window: session tabs, Threads & Variables, Console, the debug toolbar |
+| **Git Blame Annotations** | [lkqm/vscode-gitblame-annotations](https://github.com/lkqm/vscode-gitblame-annotations) 0.5.3 (MIT, licence in `resources/gitBlame/`), ported at commit `cc2c600` into `src/gitBlame/` | PyCharm's *Annotate with Git Blame*: date and author of each line in the gutter, the commit on hover, line history |
 
 Our changes on top of upstream: the extension ID is `catalinpop.aspycharm` (so the Marketplace never auto-updates it
 over our build), the Refresh Explorer menu entry, and these fixes (each with a test that fails on upstream's code):
@@ -206,6 +207,60 @@ they are; extensions cannot restyle them. The panel sits next to them; editor fe
 inline values, hovering a variable) are VS Code's own. Values from the debugged program are shown as text only.
 Tests: `src/test/suite/debugPanel.test.ts`, with a scripted debugger and the panel's page run against a fake page.
 
+### Git Blame Annotations: Annotate with Git Blame
+
+As in PyCharm: right-click the line numbers > **Annotate with Git Blame** (or **Ctrl+Alt+B**, or *AsPycharm: Annotate
+with Git Blame* in the Command Palette). Each line gets its last commit's date and author in the gutter, with a colour
+bar per commit (recent commits brighter). Right-click the line numbers > **Close Annotations**, or Ctrl+Alt+B again,
+to hide them.
+
+| Where | What it does |
+|---|---|
+| Hover over the annotation | The author (a mail link), the date, the commit message, then: the commit id (opens all of the commit's changes in a multi-file diff), copy the id, **Open on GitHub / GitLab / ... / in Browser** (from the `origin` remote), **Previous Revision** (opens the file as it was before that commit, annotated), **Line History** |
+| *AsPycharm: Git: View Line History* | The commits that changed the line with the cursor, newest first, following it through moves and renames; pick one to see its diff |
+| Editing | Changed and new lines show no annotation until saved; saving, or going back to the saved text (Undo, Revert, the file reloaded after a `git pull`), blames the file again |
+
+Settings (`aspycharm.gitBlame.*`): `dateFormatStyle` (`Y/M/D`, `YYYY-MM-DD`, `DD.MM.YYYY`, `relative`),
+`authorNameStyle` (`full`, `first`, `last`), `showCommitNumber` (the file's revision number), `mergeCommitLines` (one
+annotation per run of lines from the same commit), `highlightChangedLines` (highlight the lines of the commit under the
+cursor). It runs the `git` on PATH, only in trusted folders (like the rest of AsPycharm).
+
+Compared with lkqm's extension (reviewed on 2026-11-24: no network access, no file writes, only `git` run without a
+shell; each change below has a test in `src/test/suite/gitBlame.test.ts` that fails on upstream's code):
+
+- **Security:** the hover trusted every `command:` link and put commit messages, author names and the remote URL into
+  it as Markdown, so a commit message in a cloned repository could carry a link that runs any VS Code command when
+  clicked. They are now escaped, and the hover may run only this feature's own commands. Refs and commit ids are
+  checked before they reach git, so none can be read as an option (`git log --output=<file>` writes a file).
+- IDs are ours (`aspycharm.gitBlame.*`; upstream used `git.blame.*` and `gitblame.*`, which clash with the original
+  extension and sit in VS Code's own Git namespace). `install.cmd` removes `lkqm.gitblame-annotations` if installed.
+- No **Escape** key binding: upstream's closed the annotations instead of the suggestion list, parameter hints or a
+  multi-cursor. Use Ctrl+Alt+B or Close Annotations (PyCharm has no Escape for it either).
+- Closing the annotations while git is still blaming wins (upstream drew them anyway, and they could no longer be
+  closed); a file outside a repository, or git missing, says so instead of nothing happening; Undo or Revert back to
+  the saved text blames the file again; Line History compares Windows paths without case (VS Code's `d:\x` against
+  git's `D:/x` marked every entry as a rename); lines not committed yet are recognised in SHA-256 repositories.
+- A file with unsaved edits is blamed as it is in the editor (upstream blamed the saved file, so annotations were off
+  by the inserted lines); git's output is decoded as UTF-8 once (names like `Cătălin` were garbled when split between
+  chunks); a web link keeps the remote's port (`http://host:3000/...`); emoji in author names are measured and cut as
+  one character.
+- Not taken: the `timeago.js` dependency (relative dates are our own code, same steps), the development-only automatic
+  window reload, the GitHub workflow.
+
+Ctrl+Alt+B is also VS Code's *Toggle Secondary Side Bar*; in an editor of a file it now toggles the annotations,
+elsewhere (Output, Debug Console, other views) it still toggles the side bar.
+
+### Git merge editor by default
+
+AsPycharm changes the default of VS Code's own setting `git.mergeEditor` to on (`configurationDefaults` in
+`package.json`; no code). A file with a merge, rebase or cherry-pick conflict, opened from the Source Control view
+(*Merge Changes*), then opens in VS Code's 3-way merge editor instead of as text with `<<<<<<<` markers: **Incoming**
+and **Current** side by side, the **Result** below; accept a block with *Accept Incoming*, *Accept Current* or *Accept
+Combination*, or edit the Result, then **Complete Merge**. This is PyCharm's *Resolve Conflicts* dialog in VS Code's
+form. Only the default changes: `"git.mergeEditor": false` in your settings still wins. Without the setting the merge
+editor was already there (the *Resolve in Merge Editor* button on a conflicted file); the setting makes it the way
+conflicted files open. It is for conflicts git reports in VS Code; `git mergetool` on the command line does not use it.
+
 ## Install on a machine (no Node needed)
 
 The built extension is committed in `dist\`. On any Windows machine with VS Code and Git, clone the repository into
@@ -221,7 +276,7 @@ cd VSCodeAsPycharm
 
 - `install.cmd` (or `install.ps1`) uninstalls the extensions it replaces if present (`moshfeu.compare-folders`,
   `linda-cheung.content-menu-item-refresh`, `tumuerzunong.pycharm-like-snippets`, `yingbo.charmrun`,
-  `rufat.py-doc-links`), installs
+  `rufat.py-doc-links`, `lkqm.gitblame-annotations`), installs
   `dist\vscodeaspycharm-*.vsix`, and checks that VS Code lists it. Then reload the VS Code windows.
 - **Update:** in the cloned folder, `.\install.cmd -Pull` (git pull, then reinstall).
 - **Without Git** (or without cloning): install from the download link, below.
@@ -260,7 +315,7 @@ code --install-extension $vsix --force
   clash with ours (the clone's `install.cmd` does this for you):
 
   ```powershell
-  'moshfeu.compare-folders','linda-cheung.content-menu-item-refresh','tumuerzunong.pycharm-like-snippets','yingbo.charmrun','rufat.py-doc-links' |
+  'moshfeu.compare-folders','linda-cheung.content-menu-item-refresh','tumuerzunong.pycharm-like-snippets','yingbo.charmrun','rufat.py-doc-links','lkqm.gitblame-annotations' |
     ForEach-Object { code --uninstall-extension $_ }
   ```
 - `code` is VS Code's command line; if PowerShell does not know it, open a new window after installing VS Code, or use

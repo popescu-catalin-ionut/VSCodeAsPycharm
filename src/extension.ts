@@ -15,11 +15,13 @@ import { registerPrintExpression } from './services/printExpression';
 import { activateCharmRun } from './charmrun/activate';
 import { registerPyDocLinks } from './pyDocLinks/provider';
 import { registerDebugPanel } from './debugPanel/provider';
+import { registerGitBlame } from './gitBlame/annotations';
 
 export async function activate(context: ExtensionContext) {
   // PyCharm-style run configurations (from yingbo/charmrun); first, so an early return below cannot skip it.
   activateCharmRun(context);
   registerDebugPanel(context);
+  registerGitBlame(context);
   configurationContext.init(context);
   globalState.init(context);
   uiContext.init();

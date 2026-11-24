@@ -1,8 +1,8 @@
 {
   "name": "aspycharm",
   "displayName": "AsPycharm",
-  "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun) + Ctrl+Click links in Python docstrings and comments (rufatpro py-doc-links) + a PyCharm-style Debug panel, as one extension.",
-  "version": "2.4.2",
+  "description": "Compare Folders (moshfeu/vscode-compare-folders) + Refresh Explorer in the Explorer context menu + PyCharm-like Python snippets (un4gt/pycharm-like-snippets) + PyCharm-style run configurations (yingbo/charmrun) + Ctrl+Click links in Python docstrings and comments (rufatpro py-doc-links) + a PyCharm-style Debug panel + Git blame annotations in the gutter (lkqm/vscode-gitblame-annotations), as one extension.",
+  "version": "2.5.0",
   "repository": {
     "type": "git",
     "url": "http://192.168.3.241:3000/catalinpop/VSCodeAsPycharm"
@@ -19,7 +19,10 @@
     "launch.json",
     "docstring",
     "sphinx",
-    "debug"
+    "debug",
+    "git",
+    "blame",
+    "annotate"
   ],
   "icon": "resources/icon.png",
   "galleryBanner": {
@@ -281,8 +284,52 @@
             "description": "In Python debugging, group an object's protected (_x), special (__x__) and function members under their own nodes, as PyCharm does (debugpy 'variablePresentation'; a launch configuration that sets it wins)."
           }
         }
+      },
+      {
+        "title": "AsPycharm: Git Blame Annotations",
+        "properties": {
+          "aspycharm.gitBlame.dateFormatStyle": {
+            "type": "string",
+            "default": "Y/M/D",
+            "enum": [
+              "Y/M/D",
+              "YYYY-MM-DD",
+              "DD.MM.YYYY",
+              "relative"
+            ],
+            "description": "The date format of the blame annotations in the gutter."
+          },
+          "aspycharm.gitBlame.authorNameStyle": {
+            "type": "string",
+            "default": "full",
+            "enum": [
+              "full",
+              "first",
+              "last"
+            ],
+            "description": "Show the commit author's full name, or only the first or last name."
+          },
+          "aspycharm.gitBlame.showCommitNumber": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show the file's revision number (1 = the commit that created it) after the author."
+          },
+          "aspycharm.gitBlame.mergeCommitLines": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show the annotation only on the first line of each run of lines from the same commit."
+          },
+          "aspycharm.gitBlame.highlightChangedLines": {
+            "type": "boolean",
+            "default": false,
+            "description": "While annotations are shown, highlight every line of the commit under the cursor."
+          }
+        }
       }
     ],
+    "configurationDefaults": {
+      "git.mergeEditor": true
+    },
     "menus": {
       "commandPalette": [
         {
@@ -380,6 +427,24 @@
         {
           "command": "aspycharm.debug.evaluateExpression",
           "when": "inDebugMode"
+        },
+        {
+          "command": "aspycharm.gitBlame.show",
+          "when": "resourceScheme == file || resourceScheme == git"
+        },
+        {
+          "command": "aspycharm.gitBlame.hide",
+          "when": "aspycharm.gitBlame.canHide"
+        }
+      ],
+      "editor/lineNumber/context": [
+        {
+          "command": "aspycharm.gitBlame.show",
+          "when": "aspycharm.gitBlame.canShow"
+        },
+        {
+          "command": "aspycharm.gitBlame.hide",
+          "when": "aspycharm.gitBlame.canHide"
         }
       ],
       "view/title": [
@@ -593,6 +658,12 @@
         "command": "aspycharm.debug.evaluateExpression",
         "key": "alt+f8",
         "when": "inDebugMode && debugState == 'stopped'"
+      },
+      {
+        "command": "aspycharm.gitBlame.toggle",
+        "key": "ctrl+alt+b",
+        "mac": "cmd+alt+b",
+        "when": "editorTextFocus && (resourceScheme == file || resourceScheme == git)"
       }
     ],
     "commands": [
@@ -833,6 +904,26 @@
       {
         "command": "aspycharm.debug.evaluateExpression",
         "title": "Debug: Evaluate Expression...",
+        "category": "AsPycharm"
+      },
+      {
+        "command": "aspycharm.gitBlame.toggle",
+        "title": "Git: Toggle Blame Annotations",
+        "category": "AsPycharm"
+      },
+      {
+        "command": "aspycharm.gitBlame.show",
+        "title": "Annotate with Git Blame",
+        "category": "AsPycharm"
+      },
+      {
+        "command": "aspycharm.gitBlame.hide",
+        "title": "Close Annotations",
+        "category": "AsPycharm"
+      },
+      {
+        "command": "aspycharm.gitBlame.viewLineHistory",
+        "title": "Git: View Line History",
         "category": "AsPycharm"
       }
     ],
